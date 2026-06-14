@@ -143,7 +143,7 @@ function BrandAppearanceSection() {
   return (
     <SectionCard
       title="Brand & Appearance"
-      description="Customize the system icon, color theme, and display mode — changes apply immediately"
+      description="Customize the system icon, color theme, and display mode. Changes apply immediately."
     >
       <input
         ref={fileInputRef}
@@ -380,7 +380,7 @@ function RestaurantProfileSection() {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l4 4 6-6"/>
               </svg>
-              Saved — reload to see sidebar update
+              Saved. Reload to see sidebar update.
             </span>
           )}
         </div>
@@ -563,7 +563,7 @@ function PricingProfilesSection() {
             </svg>
             <span>
               <strong>Formula:</strong> Recommended price = Portion Cost ÷ (Food Cost % ÷ 100).
-              A 35% target means ingredients cost 35% of the selling price — industry standard.
+              A 35% target means ingredients cost 35% of the selling price, which is the industry standard.
             </span>
           </div>
         </div>
@@ -692,12 +692,12 @@ function PricingProfilesSection() {
 function AboutSection() {
   const prefs = loadPrefs();
   return (
-    <SectionCard title="About System" description="Smart Menu Pricing — capstone project information">
+    <SectionCard title="About System" description="Smart Menu Pricing capstone project information">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div className="space-y-3">
           {[
             { label: 'System',    value: 'Smart Menu Pricing' },
-            { label: 'Version',   value: 'Sprint 4 — Final' },
+            { label: 'Version',   value: 'Sprint 4 Final' },
             { label: 'Purpose',   value: 'Food cost calculation & price recommendation' },
             { label: 'Coverage',  value: 'Kidapawan City, Philippines (DTI/DA Region XII)' },
           ].map(({ label, value }) => (
@@ -710,7 +710,7 @@ function AboutSection() {
         <div className="space-y-3">
           {[
             { label: 'Backend',   value: 'Node.js + Express REST API' },
-            { label: 'Database',  value: 'MySQL — smart_menu_pricing' },
+            { label: 'Database',  value: 'MySQL (smart_menu_pricing)' },
             { label: 'Frontend',  value: 'React + Vite + Tailwind CSS v4' },
             { label: 'Extraction', value: 'Axios + Cheerio + pdf-parse + Tesseract.js' },
           ].map(({ label, value }) => (

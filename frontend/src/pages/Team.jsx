@@ -390,7 +390,7 @@ export default function Team() {
 
       {/* Edit User Modal */}
       {editTarget && (
-        <Modal title={`Edit — ${editTarget.full_name}`} onClose={() => setEditTarget(null)}>
+        <Modal title={`Edit ${editTarget.full_name}`} onClose={() => setEditTarget(null)}>
           <form onSubmit={handleEdit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>

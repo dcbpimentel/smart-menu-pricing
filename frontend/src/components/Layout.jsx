@@ -71,16 +71,14 @@ export default function Layout() {
   useEffect(() => {
     const freshPrefs = loadPrefs();
     const restaurantName = freshPrefs.restaurantName || 'Smart Menu Pricing';
-    document.title = `${pageTitle} — ${restaurantName}`;
+    document.title = `${pageTitle} | ${restaurantName}`;
 
-    const themeId = freshPrefs.theme || 'default';
     const icon = freshPrefs.brandIcon || 'fork';
-    const accentColor = THEMES[themeId]?.vars?.['--accent'] || '#10b981';
-    const svgStr = getFaviconSvg(icon, accentColor);
+    const faviconFile = icon === 'fork' || icon === 'custom' ? '/favicon.svg' : `/favicon-${icon}.svg`;
     let link = document.querySelector("link[rel~='icon']");
     if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
     link.type = 'image/svg+xml';
-    link.href = 'data:image/svg+xml,' + encodeURIComponent(svgStr);
+    link.href = faviconFile + '?v=3';
   }, [pageTitle]);
 
   const handleToggle = () => {
