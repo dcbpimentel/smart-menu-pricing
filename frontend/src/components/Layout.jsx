@@ -4,9 +4,10 @@ import {
   FiHome, FiPackage, FiBook, FiDownload,
   FiDollarSign, FiTrendingUp, FiSettings, FiMenu, FiHelpCircle, FiUsers,
 } from 'react-icons/fi';
-import { BrandMark } from './Icons';
+import { BrandMark, getFaviconSvg } from './Icons';
 import { loadPrefs } from '../lib/prefs';
 import { getUser } from '../lib/auth';
+import { THEMES } from '../lib/theme';
 
 const NAV_ITEMS = [
   { to: '/',            label: 'Dashboard',       icon: FiHome },
@@ -66,6 +67,21 @@ export default function Layout() {
 
   const pageTitle = PAGE_TITLES[location.pathname]
     ?? (/^\/recipes\/\d+/.test(location.pathname) ? 'Recipes' : 'SmartMenu');
+
+  useEffect(() => {
+    const freshPrefs = loadPrefs();
+    const restaurantName = freshPrefs.restaurantName || 'Smart Menu Pricing';
+    document.title = `${pageTitle} — ${restaurantName}`;
+
+    const themeId = freshPrefs.theme || 'default';
+    const icon = freshPrefs.brandIcon || 'fork';
+    const accentColor = THEMES[themeId]?.vars?.['--accent'] || '#10b981';
+    const svgStr = getFaviconSvg(icon, accentColor);
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.type = 'image/svg+xml';
+    link.href = 'data:image/svg+xml,' + encodeURIComponent(svgStr);
+  }, [pageTitle]);
 
   const handleToggle = () => {
     if (isMobile) setMobileOpen(o => !o);

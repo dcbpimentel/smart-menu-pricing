@@ -1,3 +1,17 @@
+// ── Favicon SVG string map (SVG attribute syntax, not JSX) ───────────────────
+const BRAND_SVG_INNER = {
+  fork: `<line x1="13" y1="7" x2="13" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="7" x2="20" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="27" y1="7" x2="27" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M13 15 C13 20 17 20.5 20 20.5 C23 20.5 27 20 27 15" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><line x1="20" y1="20.5" x2="20" y2="33" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="15.5" y1="25" x2="24.5" y2="25" stroke="white" stroke-width="1.6" stroke-linecap="round"/><line x1="15.5" y1="28.5" x2="24.5" y2="28.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>`,
+  flame: `<path d="M20 9 C17 12 14 16 14 20.5 C14 24.5 16.7 28 20 28 C23.3 28 26 24.5 26 20.5 C26 18 24.5 16 24.5 16 C24.5 16 24 19 22 20 C22 20 23 17 21.5 14 C21.5 14 21 17 19 17.5 C19 17.5 21 15 20 9 Z" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.22)" stroke-linejoin="round"/>`,
+  leaf: `<path d="M20 30 L20 19" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M20 8 C20 8 29 11 29 21 C29 27 25 30 20 30 C15 30 11 27 11 21 C11 11 20 8 20 8 Z" stroke="white" stroke-width="1.6" fill="rgba(255,255,255,0.20)" stroke-linejoin="round"/><path d="M14 16 C16 14 18.5 13.5 20 14" stroke="white" stroke-width="1.4" stroke-linecap="round"/>`,
+  star: `<polygon points="20,9 22.9,17.1 31.5,17.1 24.8,22.3 27.3,30.4 20,25.2 12.7,30.4 15.2,22.3 8.5,17.1 17.1,17.1" fill="white" fill-opacity="0.9" stroke="rgba(255,255,255,0.4)" stroke-width="0.5" stroke-linejoin="round"/>`,
+  bowl: `<path d="M13 10 C13 10 12.5 12 14 13" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M20 9 C20 9 19.5 11 21 12" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M27 10 C27 10 26.5 12 28 13" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M9 15 L31 15 C31 15 30 26 20 26 C10 26 9 15 9 15 Z" stroke="white" stroke-width="1.6" fill="rgba(255,255,255,0.20)" stroke-linejoin="round"/><line x1="15" y1="29" x2="25" y2="29" stroke="white" stroke-width="1.8" stroke-linecap="round"/><line x1="20" y1="26" x2="20" y2="29" stroke="white" stroke-width="1.6" stroke-linecap="round"/>`,
+};
+
+export function getFaviconSvg(iconId, accentColor = '#10b981') {
+  const inner = BRAND_SVG_INNER[iconId] || BRAND_SVG_INNER.fork;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="${accentColor}"/>${inner}</svg>`;
+}
+
 // ── Brand icon inner SVG content map ─────────────────────────────────────────
 const BRAND_INNER = {
   fork: (
