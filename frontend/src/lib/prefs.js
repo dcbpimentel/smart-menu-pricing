@@ -6,9 +6,11 @@ const DEFAULTS = {
   location: '',
   alertThresholdDays: 7,
   defaultPriceSource: 'latest',
-  theme: 'default',
+  theme: 'bistro',
   brandIcon: 'fork',
   brandIconCustom: '',
+  priceGapThreshold: 15,
+  foodCostDeviationThreshold: 5,
 };
 
 export function loadPrefs() {
@@ -22,4 +24,5 @@ export function loadPrefs() {
 
 export function savePrefs(prefs) {
   localStorage.setItem(KEY, JSON.stringify(prefs));
+  window.dispatchEvent(new CustomEvent('smp:prefs-updated'));
 }

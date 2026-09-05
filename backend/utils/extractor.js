@@ -45,10 +45,14 @@ const dateFromText = (text) => {
     const mm = String(MONTH_MAP[m[1].toLowerCase()]).padStart(2, '0');
     return `${m[3]}-${mm}-${String(m[2]).padStart(2, '0')}`;
   }
-  return new Date().toISOString().slice(0, 10);
+  return null;
 };
 
-const extractPageDate = ($) => dateFromText($('body').text());
+// Returns the date found in the page, plus whether it was assumed (guessed as today)
+const extractPageDate = ($) => {
+  const raw = dateFromText($('body').text());
+  return { date: raw ?? new Date().toISOString().slice(0, 10), dateAssumed: !raw };
+};
 
 // ── HTML column detection ─────────────────────────────────────────────────────
 
@@ -69,7 +73,7 @@ const detectColumns = (headerCells) => {
 
 const parseHTMLString = (html, source) => {
   const $ = cheerio.load(html);
-  const date = extractPageDate($);
+  const { date, dateAssumed } = extractPageDate($);
   const results = [];
 
   $('table').each((_, table) => {
@@ -94,7 +98,10 @@ const parseHTMLString = (html, source) => {
       if (rawPrice === null || rawPrice === 0) return;
 
       const rawUnit = unitText || parseUnitFromPriceString(priceCell) || 'kg';
-      results.push({ raw_name: nameText, raw_unit: rawUnit, raw_price: rawPrice, date, source });
+      results.push({
+        raw_name: nameText, raw_unit: rawUnit, raw_price: rawPrice, date, source,
+        ...(dateAssumed ? { flagged: true, flag_reason: 'date_assumed' } : {}),
+      });
     });
   });
 
@@ -177,9 +184,7 @@ const PRICE_RE = /(?<![a-zA-Z])(\d{1,5}(?:\.\d{1,2})?)(?![a-zA-Z])/;
 
 const looksLikePriceRow = (line) => PRICE_RE.test(line) && UNIT_RE.test(line);
 
-const parsePriceLine = (line, source) => {
-  const today = new Date().toISOString().slice(0, 10);
-
+const parsePriceLine = (line, source, date, dateAssumed = false) => {
   const unitMatch  = line.match(UNIT_RE);
   const rawUnit    = unitMatch ? unitMatch[1].toLowerCase() : null;
 
@@ -193,18 +198,19 @@ const parsePriceLine = (line, source) => {
     .replace(/\s+/g, ' ')
     .trim();
 
-  const flagged = !rawUnit || rawPrice === null || !rawName;
-  return { raw_name: rawName || line.trim(), raw_unit: rawUnit ?? '', raw_price: rawPrice, date: today, source, flagged };
+  const flagged = !rawUnit || rawPrice === null || !rawName || dateAssumed;
+  const flag_reason = !rawUnit ? 'missing_unit' : (!rawPrice ? 'missing_price' : (dateAssumed ? 'date_assumed' : null));
+  return { raw_name: rawName || line.trim(), raw_unit: rawUnit ?? '', raw_price: rawPrice, date, source, flagged, flag_reason };
 };
 
 // Shared helper: split raw text into lines and parse each price row
-const parseLines = (text, source) =>
+const parseLines = (text, source, date, dateAssumed = false) =>
   text
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 2)
     .filter(looksLikePriceRow)
-    .map((line) => parsePriceLine(line, source));
+    .map((line) => parsePriceLine(line, source, date, dateAssumed));
 
 // ── PDF extraction ────────────────────────────────────────────────────────────
 
@@ -212,7 +218,10 @@ const extractFromPDF = async (filePath, source) => {
   try {
     const buffer = fs.readFileSync(filePath);
     const parsed = await pdf(buffer);
-    return { success: true, data: parseLines(parsed.text, source) };
+    const rawDate = dateFromText(parsed.text);
+    const date = rawDate ?? new Date().toISOString().slice(0, 10);
+    const dateAssumed = !rawDate;
+    return { success: true, data: parseLines(parsed.text, source, date, dateAssumed) };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -229,7 +238,10 @@ const extractFromImage = async (filePath, source) => {
     worker = await createWorker('eng');
     await worker.setParameters({ tessedit_char_whitelist: OCR_WHITELIST });
     const { data: { text } } = await worker.recognize(filePath);
-    return { success: true, data: parseLines(text, source) };
+    const rawDate = dateFromText(text);
+    const date = rawDate ?? new Date().toISOString().slice(0, 10);
+    const dateAssumed = !rawDate;
+    return { success: true, data: parseLines(text, source, date, dateAssumed) };
   } catch (err) {
     return { success: false, error: err.message };
   } finally {

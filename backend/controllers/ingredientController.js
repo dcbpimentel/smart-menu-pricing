@@ -1,5 +1,11 @@
 const db = require('../utils/db');
 
+// Title-case and trim category so "condiments" and "Condiments" don't split the filter pills
+const normalizeCategory = (cat) => {
+  if (!cat) return cat;
+  return cat.trim().replace(/\b\w/g, c => c.toUpperCase());
+};
+
 const getAllIngredients = async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM ingredients ORDER BY name');
@@ -29,7 +35,7 @@ const createIngredient = async (req, res) => {
     }
     const [result] = await db.query(
       'INSERT INTO ingredients (name, unit, category) VALUES (?, ?, ?)',
-      [name, unit, category]
+      [name.trim(), unit.trim(), normalizeCategory(category)]
     );
     const [rows] = await db.query('SELECT * FROM ingredients WHERE id = ?', [result.insertId]);
     res.status(201).json({ success: true, data: rows[0], message: '' });
@@ -46,7 +52,7 @@ const updateIngredient = async (req, res) => {
     const { name, unit, category } = req.body;
     const [result] = await db.query(
       'UPDATE ingredients SET name = COALESCE(?, name), unit = COALESCE(?, unit), category = COALESCE(?, category) WHERE id = ?',
-      [name ?? null, unit ?? null, category ?? null, req.params.id]
+      [name?.trim() ?? null, unit?.trim() ?? null, normalizeCategory(category) ?? null, req.params.id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, data: null, message: 'Not found' });

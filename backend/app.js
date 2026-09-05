@@ -12,6 +12,8 @@ const recipesRouter     = require('./routes/recipes');
 const settingsRouter    = require('./routes/settings');
 const extractionRouter  = require('./routes/extraction');
 const costingRouter     = require('./routes/costing');
+const exportRouter      = require('./routes/export');
+const inventoryRouter   = require('./routes/inventory');
 
 const app = express();
 
@@ -36,6 +38,8 @@ app.use('/api/recipes',     verifyToken, recipesRouter);
 app.use('/api/settings',    verifyToken, settingsRouter);
 app.use('/api/extraction',  verifyToken, extractionRouter);
 app.use('/api/costing',     verifyToken, costingRouter);
+app.use('/api/export',      verifyToken, exportRouter);
+app.use('/api/inventory',   verifyToken, inventoryRouter);
 
 // Global error handler
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars

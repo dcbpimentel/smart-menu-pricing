@@ -18,10 +18,13 @@ import Settings     from './pages/Settings';
 import Help         from './pages/Help';
 import Profile      from './pages/Profile';
 import Team         from './pages/Team';
+import Reports      from './pages/Reports';
+import Inventory    from './pages/Inventory';
 
 export default function App() {
   useEffect(() => {
-    applyTheme(loadPrefs().theme || 'default');
+    const saved = loadPrefs().theme;
+    applyTheme(saved === 'light' || saved === 'dark' ? saved : 'light');
   }, []);
 
   return (
@@ -50,6 +53,8 @@ export default function App() {
           <Route path="help"        element={<Help />} />
           <Route path="profile"     element={<Profile />} />
           <Route path="team"        element={<Team />} />
+          <Route path="reports"     element={<Reports />} />
+          <Route path="inventory"   element={<Inventory />} />
         </Route>
 
         {/* Fallback */}

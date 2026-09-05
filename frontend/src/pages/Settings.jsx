@@ -1,9 +1,27 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../lib/api';
 import { loadPrefs, savePrefs } from '../lib/prefs';
-import { applyTheme, THEMES } from '../lib/theme';
-import { BrandMark } from '../components/Icons';
 import Select from '../components/Select';
+import { useToast } from '../components/Toast';
+import { SkeletonTable } from '../components/Skeleton';
+
+/* ─── Design tokens ────────────────────────────────────────────────────────── */
+const T = {
+  accent:      '#4C5D3E',
+  accentLight: 'oklch(0.955 0.021 138)',
+  textPrimary: '#24201C',
+  textSecond:  '#6B625A',
+  textMuted:   '#8C837B',
+  inputBorder: '#E7DFD4',
+  inputBg:     '#FDFBF8',
+  focusShadow: '0 0 0 4px oklch(0.945 0.028 138)',
+  cardBorder:  '1px solid #EFE8DE',
+  rowDivider:  '1px solid #F3EDE4',
+  rowHover:    '#FDFBF8',
+  tblHead:     '#A79E94',
+  tblHeadBg:   '#FDFBF8',
+};
 
 const ROUNDING_LABELS = {
   none: 'None',
@@ -31,286 +49,92 @@ const SOURCE_OPTIONS = [
   { value: 'da',     label: 'DA prices only',       description: 'Only use prices from DA bulletins' },
 ];
 
-const ICON_OPTIONS = [
-  { id: 'fork',  label: 'Fork & Bowl' },
-  { id: 'flame', label: 'Flame' },
-  { id: 'leaf',  label: 'Leaf' },
-  { id: 'star',  label: 'Star' },
-  { id: 'bowl',  label: 'Bowl' },
-  { id: 'custom', label: 'Custom PNG' },
-];
 
-function Spinner() {
+function SectionCard({ title, description, children, defaultOpen = true }) {
+  const storageKey = `scard_${title}`;
+  const [open, setOpen] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      return stored !== null ? stored === 'true' : defaultOpen;
+    } catch { return defaultOpen; }
+  });
+  const toggle = () => setOpen(o => {
+    const next = !o;
+    try { sessionStorage.setItem(storageKey, String(next)); } catch {}
+    return next;
+  });
   return (
-    <div className="flex items-center justify-center py-12">
-      <div className="w-7 h-7 rounded-full border-2 border-gray-200 animate-spin" style={{ borderTopColor: 'var(--accent)' }} />
-    </div>
-  );
-}
-
-function SectionCard({ title, description, children }) {
-  return (
-    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-      <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-        <h3 className="font-semibold text-gray-800 text-sm">{title}</h3>
-        {description && <p className="text-xs text-gray-400 mt-0.5">{description}</p>}
+    <div style={{ background: '#FFFFFF', border: T.cardBorder, borderRadius: 20, overflow: 'hidden' }}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={toggle}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggle()}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12, padding: '16px 24px', background: '#FDFBF8',
+          borderBottom: open ? T.rowDivider : 'none',
+          cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        <div>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary, margin: 0,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
+            {title}
+          </h3>
+          {description && <p style={{ fontSize: 12.5, color: T.textMuted, marginTop: 3, marginBottom: 0 }}>{description}</p>}
+        </div>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: T.textMuted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <path d="M3 5.5L8 10.5L13 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
-      <div className="px-6 py-5">
-        {children}
-      </div>
+      {open && (
+        <div style={{ padding: '22px 24px' }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
 
 function Modal({ onClose, children }) {
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(10,8,6,0.5)', backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col"
-        style={{ maxHeight: '90vh' }}
+        className="modal-content"
+        style={{ background: '#FFFFFF', borderRadius: 20, border: T.cardBorder, width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 40px)', boxShadow: '0 32px 80px rgba(36,32,28,0.22)' }}
         onClick={e => e.stopPropagation()}
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 function ModalHeader({ title, subtitle, onClose }) {
   return (
-    <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: T.rowDivider, flexShrink: 0 }}>
       <div>
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+        <h3 style={{ fontWeight: 600, fontSize: 15.5, color: T.textPrimary, margin: 0,
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
+          {title}
+        </h3>
+        {subtitle && <p style={{ fontSize: 12.5, color: T.textMuted, marginTop: 3, marginBottom: 0 }}>{subtitle}</p>}
       </div>
-      <button onClick={onClose} className="text-gray-400 hover:text-gray-600 mt-0.5 ml-4" aria-label="Close">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <button
+        onClick={onClose}
+        aria-label="Close"
+        style={{ width: 30, height: 30, borderRadius: 8, border: '1px solid #EFE8DE', background: '#FDFBF8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, marginLeft: 12, flexShrink: 0 }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
           <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
       </button>
     </div>
-  );
-}
-
-// ── Brand Appearance section ────────────────────────────────────────────────────
-function BrandAppearanceSection() {
-  const fileInputRef = useRef(null);
-  const [sel, setSel] = useState(() => {
-    const p = loadPrefs();
-    return {
-      theme: p.theme || 'default',
-      brandIcon: p.brandIcon || 'fork',
-      brandIconCustom: p.brandIconCustom || '',
-    };
-  });
-  const [saved, setSaved] = useState(false);
-
-  const persist = (updates) => {
-    const next = { ...sel, ...updates };
-    setSel(next);
-    const current = loadPrefs();
-    savePrefs({ ...current, ...next });
-    if (updates.theme) {
-      applyTheme(updates.theme);
-    }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
-  };
-
-  const handleIconSelect = (iconId) => {
-    if (iconId === 'custom') {
-      fileInputRef.current?.click();
-      return;
-    }
-    persist({ brandIcon: iconId });
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      persist({ brandIcon: 'custom', brandIconCustom: ev.target.result });
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  return (
-    <SectionCard
-      title="Brand & Appearance"
-      description="Customize the system icon, color theme, and display mode. Changes apply immediately."
-    >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
-
-      {/* System Icon */}
-      <div className="mb-6">
-        <label className="block text-xs font-medium text-gray-500 mb-3">System Icon</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          {ICON_OPTIONS.map(({ id, label }) => {
-            const isSelected = sel.brandIcon === id || (id === 'custom' && sel.brandIcon === 'custom');
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => handleIconSelect(id)}
-                title={label}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 10px 8px',
-                  borderRadius: '12px',
-                  border: `2px solid ${isSelected ? 'var(--accent)' : '#EAEAEA'}`,
-                  background: isSelected ? 'var(--accent-light)' : 'white',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s, background 0.15s',
-                  minWidth: '72px',
-                }}
-              >
-                {id === 'custom' && sel.brandIcon === 'custom' && sel.brandIconCustom ? (
-                  <BrandMark size={36} iconId="custom" customUrl={sel.brandIconCustom} />
-                ) : id === 'custom' ? (
-                  <div
-                    style={{
-                      width: 36, height: 36, borderRadius: '10px', border: '1.5px dashed #d1d5db',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#9ca3af', background: '#f9fafb',
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                ) : (
-                  <BrandMark size={36} iconId={id} />
-                )}
-                <span style={{
-                  fontSize: '10px', fontWeight: 500, lineHeight: 1,
-                  color: isSelected ? 'var(--accent)' : '#6b7280',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {sel.brandIcon === 'custom' && sel.brandIconCustom && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-2 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
-          >
-            Replace image
-          </button>
-        )}
-      </div>
-
-      {/* Theme picker */}
-      <div>
-        <label className="block text-xs font-medium text-gray-500 mb-3">Color Theme</label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          {Object.entries(THEMES).map(([id, theme]) => {
-            const isSelected = sel.theme === id;
-            const isDark = theme.isDark;
-
-            // Dark mode swatch has its own dark-background treatment
-            const swatchBg = isDark
-              ? (isSelected ? '#0f172a' : '#1a2235')
-              : (isSelected ? `${theme.preview}15` : 'white');
-            const swatchBorder = isDark
-              ? `2px solid ${isSelected ? '#10b981' : '#334155'}`
-              : `2px solid ${isSelected ? theme.preview : '#EAEAEA'}`;
-            const labelColor = isDark
-              ? (isSelected ? '#6ee7b7' : '#94a3b8')
-              : (isSelected ? theme.preview : '#6b7280');
-
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => persist({ theme: id })}
-                title={theme.description}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '7px',
-                  padding: '10px 12px 9px',
-                  borderRadius: '12px',
-                  border: swatchBorder,
-                  background: swatchBg,
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s, background 0.15s',
-                  minWidth: '76px',
-                }}
-              >
-                {isDark ? (
-                  /* Dark mode: show a tiny dark-UI preview */
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'stretch' }}>
-                    {/* mini sidebar strip */}
-                    <div style={{ width: 7, borderRadius: '3px', background: '#0d1117', flexShrink: 0 }} />
-                    {/* mini canvas with card */}
-                    <div style={{
-                      width: 38, height: 26, borderRadius: '4px', background: '#0f172a',
-                      padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: '3px',
-                    }}>
-                      <div style={{ height: 4, borderRadius: '2px', background: '#1e293b', width: '100%' }} />
-                      <div style={{ height: 4, borderRadius: '2px', background: '#10b981', width: '60%' }} />
-                      <div style={{ height: 4, borderRadius: '2px', background: '#1e293b', width: '80%' }} />
-                    </div>
-                  </div>
-                ) : (
-                  /* Light themes: sidebar dot + content lines */
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{
-                      width: 22, height: 22, borderRadius: '6px',
-                      background: '#1e293b',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <div style={{ width: 10, height: 10, borderRadius: '3px', background: theme.preview }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <div style={{ width: 24, height: 4, borderRadius: '2px', background: '#f3f4f6' }} />
-                      <div style={{ width: 18, height: 4, borderRadius: '2px', background: '#e5e7eb' }} />
-                    </div>
-                  </div>
-                )}
-                <span style={{
-                  fontSize: '10px', fontWeight: 600, lineHeight: 1,
-                  color: labelColor,
-                  whiteSpace: 'nowrap',
-                }}>
-                  {theme.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {saved && (
-        <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full w-fit">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l4 4 6-6"/>
-          </svg>
-          Applied
-        </div>
-      )}
-    </SectionCard>
   );
 }
 
@@ -335,52 +159,58 @@ function RestaurantProfileSection() {
       title="Restaurant Profile"
       description="Displayed in the sidebar and used to personalize the experience"
     >
-      <form onSubmit={handleSave} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Restaurant Name</label>
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Restaurant Name</label>
             <input
               type="text"
               value={form.restaurantName}
               onChange={e => setForm(f => ({ ...f, restaurantName: e.target.value }))}
               placeholder="e.g. Casa Manila"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none"
+              style={{ height: 44, borderRadius: 12, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, padding: '0 14px', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+              onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
+              onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Owner / Manager Name</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Owner / Manager Name</label>
             <input
               type="text"
               value={form.ownerName}
               onChange={e => setForm(f => ({ ...f, ownerName: e.target.value }))}
               placeholder="e.g. Maria Santos"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none"
+              style={{ height: 44, borderRadius: 12, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, padding: '0 14px', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+              onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
+              onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
             />
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">Location</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Location</label>
           <input
             type="text"
             value={form.location}
             onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
             placeholder="e.g. Kidapawan City, Cotabato"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none"
+            style={{ height: 44, borderRadius: 12, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, padding: '0 14px', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+            onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
+            onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
           />
         </div>
-        <div className="flex items-center gap-3 pt-1">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 4 }}>
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-opacity btn-accent"
+            style={{ height: 40, padding: '0 20px', borderRadius: 12, background: T.accent, color: '#FFFFFF', fontWeight: 700, fontSize: 13.5, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             Save Profile
           </button>
           {saved && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l4 4 6-6"/>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'oklch(0.44 0.12 145)', background: 'oklch(0.955 0.058 145)', padding: '4px 10px', borderRadius: 20 }}>
+              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 8l5 5 7-7"/>
               </svg>
-              Saved. Reload to see sidebar update.
+              Saved
             </span>
           )}
         </div>
@@ -409,43 +239,92 @@ function PreferencesSection() {
     <SectionCard
       title="Preferences"
       description="Controls how the Dashboard and Costing pages behave by default"
+      defaultOpen={false}
     >
-      <form onSubmit={handleSave} className="space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Price Alert Threshold</label>
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 18 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Price Alert Threshold</label>
             <Select
               value={prefs.alertThresholdDays}
               onChange={v => update('alertThresholdDays', Number(v))}
               options={THRESHOLD_OPTIONS}
             />
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>
               Dashboard flags ingredients with prices older than this
             </p>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1.5">Default Price Source</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Default Price Source</label>
             <Select
               value={prefs.defaultPriceSource}
               onChange={v => update('defaultPriceSource', v)}
               options={SOURCE_OPTIONS}
             />
-            <p className="text-xs text-gray-400 mt-1.5">
+            <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>
               Pre-selected in the Cost Computation form
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 pt-1">
+
+        {/* Price Change Threshold settings */}
+        <div style={{ borderTop: T.rowDivider, paddingTop: 18 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: T.textPrimary, margin: '0 0 4px' }}>Price Change Thresholds</p>
+          <p style={{ fontSize: 12, color: T.textMuted, margin: '0 0 16px' }}>
+            The system flags a recipe for a price update when <strong>either</strong> condition is exceeded. Used on the Reports page and Cost Computation page.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 18 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>
+                Max Price Gap (%)
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={prefs.priceGapThreshold ?? 15}
+                  onChange={e => update('priceGapThreshold', Math.max(1, Math.min(100, Number(e.target.value))))}
+                  style={{ width: 72, height: 38, padding: '0 10px', borderRadius: 10, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, fontWeight: 600, color: T.textPrimary, fontFamily: 'inherit' }}
+                />
+                <span style={{ fontSize: 13, color: T.textMuted }}>%</span>
+              </div>
+              <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>
+                Flag when actual selling price deviates from the recommended price by more than this percentage
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>
+                Max Food Cost Deviation (pp)
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={prefs.foodCostDeviationThreshold ?? 5}
+                  onChange={e => update('foodCostDeviationThreshold', Math.max(1, Math.min(50, Number(e.target.value))))}
+                  style={{ width: 72, height: 38, padding: '0 10px', borderRadius: 10, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, fontWeight: 600, color: T.textPrimary, fontFamily: 'inherit' }}
+                />
+                <span style={{ fontSize: 13, color: T.textMuted }}>pp</span>
+              </div>
+              <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>
+                Flag when the actual food cost % exceeds the target by more than this many percentage points
+              </p>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 4 }}>
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white rounded-lg hover:opacity-90 transition-opacity btn-accent"
+            style={{ height: 40, padding: '0 20px', borderRadius: 12, background: T.accent, color: '#FFFFFF', fontWeight: 700, fontSize: 13.5, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
           >
             Save Preferences
           </button>
           {saved && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l4 4 6-6"/>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'oklch(0.44 0.12 145)', background: 'oklch(0.955 0.058 145)', padding: '4px 10px', borderRadius: 20 }}>
+              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 8l5 5 7-7"/>
               </svg>
               Saved
             </span>
@@ -458,9 +337,22 @@ function PreferencesSection() {
 
 // ── Pricing Profiles section ───────────────────────────────────────────────────
 function PricingProfilesSection() {
+  const toast = useToast();
+  const [open, setOpen] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('scard_Pricing Profiles');
+      return stored !== null ? stored === 'true' : true;
+    } catch { return true; }
+  });
+  const toggleOpen = () => setOpen(o => {
+    const next = !o;
+    try { sessionStorage.setItem('scard_Pricing Profiles', String(next)); } catch {}
+    return next;
+  });
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -482,6 +374,13 @@ function PricingProfilesSection() {
   }, []);
 
   useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setModalOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalOpen]);
 
   const openAdd = () => {
     setEditTarget(null);
@@ -513,8 +412,10 @@ function PricingProfilesSection() {
       };
       if (editTarget) {
         await api.put(`/settings/${editTarget.id}`, payload);
+        toast.success(`"${payload.label}" updated.`);
       } else {
         await api.post('/settings', payload);
+        toast.success(`"${payload.label}" added.`);
       }
       setModalOpen(false);
       fetchProfiles();
@@ -526,96 +427,145 @@ function PricingProfilesSection() {
   };
 
   const handleDelete = async (profile) => {
-    if (!window.confirm(`Delete profile "${profile.label}"?`)) return;
     try {
       await api.delete(`/settings/${profile.id}`);
+      setPendingDelete(null);
+      toast.success(`"${profile.label}" deleted.`);
       fetchProfiles();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete profile.');
+      toast.error(err.response?.data?.message || 'Failed to delete profile.');
     }
   };
 
   return (
     <>
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/60 flex items-center justify-between">
+      <div style={{ background: '#FFFFFF', border: T.cardBorder, borderRadius: 20, overflow: 'hidden' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={toggleOpen}
+          onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggleOpen()}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 12, padding: '16px 24px', background: '#FDFBF8',
+            borderBottom: open ? T.rowDivider : 'none',
+            cursor: 'pointer', userSelect: 'none',
+          }}
+        >
           <div>
-            <h3 className="font-semibold text-gray-800 text-sm">Pricing Profiles</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Configure food-cost targets and rounding rules for selling price recommendations</p>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: T.textPrimary, margin: 0,
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
+              Pricing Profiles
+            </h3>
+            <p style={{ fontSize: 12.5, color: T.textMuted, marginTop: 3, marginBottom: 0 }}>
+              Configure food-cost targets and rounding rules for selling price recommendations
+            </p>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white rounded-lg hover:opacity-90 transition-opacity btn-accent"
-          >
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-              <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); openAdd(); }}
+              style={{ height: 32, padding: '0 14px', borderRadius: 10, background: T.accent, color: '#FFFFFF', fontWeight: 700, fontSize: 12.5, border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+            >
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Add Profile
+            </button>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ color: T.textMuted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+              <path d="M3 5.5L8 10.5L13 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Add Profile
-          </button>
-        </div>
-
-        <div className="px-6 py-4">
-          <div className="flex items-start gap-2.5 p-3.5 border border-blue-100 bg-blue-50 rounded-lg text-xs text-blue-700">
-            <svg className="flex-shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-              <line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <circle cx="8" cy="5.5" r="0.5" fill="currentColor"/>
-            </svg>
-            <span>
-              <strong>Formula:</strong> Recommended price = Portion Cost ÷ (Food Cost % ÷ 100).
-              A 35% target means ingredients cost 35% of the selling price, which is the industry standard.
-            </span>
           </div>
         </div>
 
-        {loading ? (
-          <Spinner />
+        {open && (
+          <div style={{ padding: '16px 24px', borderBottom: T.rowDivider }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px', border: '1px solid #DAE8E0', background: 'oklch(0.975 0.018 145)', borderRadius: 12, fontSize: 12.5, color: 'oklch(0.40 0.1 145)' }}>
+              <svg style={{ flexShrink: 0, marginTop: 1 }} width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
+                <line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="8" cy="5.5" r="0.5" fill="currentColor"/>
+              </svg>
+              <span>
+                <strong>Formula:</strong> Recommended price = Portion Cost divided by (Food Cost % divided by 100).
+                A 35% target means ingredients cost 35% of the selling price, which is the industry standard.
+              </span>
+            </div>
+          </div>
+        )}
+        {open && (loading ? (
+          <div style={{ padding: 20 }}><SkeletonTable rows={3} cols={4} /></div>
         ) : error ? (
-          <p className="text-red-500 text-sm px-6 pb-6">{error}</p>
+          <p style={{ color: 'oklch(0.58 0.16 28)', fontSize: 13, padding: '0 24px 24px' }}>{error}</p>
         ) : profiles.length === 0 ? (
-          <div className="border border-dashed border-gray-200 rounded-lg mx-6 mb-6 p-10 text-center">
-            <p className="text-gray-400 text-sm">No pricing profiles yet.</p>
+          <div style={{ border: '1.5px dashed #DFD5C7', borderRadius: 14, margin: '0 24px 24px', padding: '40px 24px', textAlign: 'center' }}>
+            <p style={{ color: T.textMuted, fontSize: 14, margin: 0 }}>No pricing profiles yet.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto border-t border-gray-100">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Label</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Food Cost Target</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Rounding</th>
-                  <th className="text-right px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Actions</th>
+                <tr>
+                  {[
+                    { label: 'Label',            align: 'left',  first: true },
+                    { label: 'Food Cost Target', align: 'left' },
+                    { label: 'Rounding',         align: 'left' },
+                    { label: 'Actions',          align: 'right', last: true },
+                  ].map((h, i) => (
+                    <th key={i} style={{
+                      background: T.tblHeadBg, color: T.tblHead,
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+                      padding: '11px 12px',
+                      paddingLeft:  h.first ? 24 : 12,
+                      paddingRight: h.last  ? 24 : 12,
+                      textAlign: h.align,
+                    }}>
+                      {h.label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {profiles.map((profile, i) => (
                   <tr
                     key={profile.id}
-                    className={`${i < profiles.length - 1 ? 'border-b border-gray-50' : ''} hover:bg-gray-50 transition-colors`}
+                    style={{ borderTop: i === 0 ? 'none' : T.rowDivider, transition: 'background 0.1s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <td className="px-5 py-3.5 font-medium text-gray-800">{profile.label}</td>
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono text-sm font-semibold text-accent">
+                    <td style={{ padding: '13px 12px 13px 24px', fontWeight: 600, color: T.textPrimary, fontSize: 14 }}>{profile.label}</td>
+                    <td style={{ padding: '13px 12px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 700, color: T.accent }}>
                         {profile.target_food_cost_pct}%
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500 text-xs">
+                    <td style={{ padding: '13px 12px', color: T.textSecond, fontSize: 13 }}>
                       {ROUNDING_LABELS[profile.rounding_rule] ?? profile.rounding_rule}
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <button onClick={() => openEdit(profile)} className="text-xs font-medium text-gray-400 hover:text-gray-600 mr-4">
-                        Edit
-                      </button>
-                      <button onClick={() => handleDelete(profile)} className="text-xs font-medium text-red-400 hover:text-red-600">
-                        Delete
-                      </button>
+                    <td style={{ padding: '13px 24px 13px 12px', textAlign: 'right' }}>
+                      {pendingDelete === profile.id ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 12.5, color: T.textSecond }}>Delete?</span>
+                          <button onClick={() => handleDelete(profile)} style={{ fontSize: 12.5, fontWeight: 700, color: 'oklch(0.52 0.18 28)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Yes</button>
+                          <button onClick={() => setPendingDelete(null)} style={{ fontSize: 12.5, fontWeight: 600, color: T.textMuted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>No</button>
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                          <button onClick={() => openEdit(profile)} style={{ fontSize: 12.5, fontWeight: 600, color: T.textMuted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                            Edit
+                          </button>
+                          <button onClick={() => setPendingDelete(profile.id)} style={{ fontSize: 12.5, fontWeight: 600, color: 'oklch(0.58 0.16 28)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                            Delete
+                          </button>
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
+        ))}
       </div>
 
       {modalOpen && (
@@ -625,58 +575,62 @@ function PricingProfilesSection() {
             subtitle={editTarget ? `Editing "${editTarget.label}"` : 'Create a new pricing configuration'}
             onClose={() => setModalOpen(false)}
           />
-          <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Label *</label>
+          <form onSubmit={handleSubmit} style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Label *</label>
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 placeholder="e.g. Default, High Margin"
                 value={form.label}
                 onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                 required
                 autoFocus
+                style={{ height: 44, borderRadius: 12, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, padding: '0 14px', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}
+                onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
+                onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Target Food Cost % *</label>
-              <div className="flex items-center gap-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Target Food Cost % *</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input
                   type="number"
                   min="1"
                   max="100"
                   step="0.01"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                   placeholder="35.00"
                   value={form.target_food_cost_pct}
                   onChange={e => setForm(f => ({ ...f, target_food_cost_pct: e.target.value }))}
                   required
+                  style={{ height: 44, borderRadius: 12, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, padding: '0 14px', outline: 'none', fontFamily: 'inherit', flex: 1 }}
+                  onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
+                  onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
                 />
-                <span className="text-gray-400 text-sm font-medium flex-shrink-0">%</span>
+                <span style={{ color: T.textMuted, fontSize: 14, fontWeight: 600, flexShrink: 0 }}>%</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Industry standard: 25–40% for restaurants</p>
+              <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>Industry standard: 25–40% for restaurants</p>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Rounding Rule *</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Rounding Rule *</label>
               <Select
                 value={form.rounding_rule}
                 onChange={v => setForm(f => ({ ...f, rounding_rule: v }))}
                 options={ROUNDING_OPTIONS}
               />
             </div>
-            {formError && <p className="text-red-500 text-xs">{formError}</p>}
-            <div className="flex justify-end gap-2 pt-2">
+            {formError && <p style={{ color: 'oklch(0.58 0.16 28)', fontSize: 13, margin: 0 }}>{formError}</p>}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 6 }}>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
+                style={{ height: 40, padding: '0 18px', borderRadius: 12, background: '#FFFFFF', border: '1px solid #E7DFD4', color: T.textSecond, fontWeight: 600, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={formLoading}
-                className="px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-60 hover:opacity-90 transition-opacity btn-accent"
+                style={{ height: 40, padding: '0 20px', borderRadius: 12, background: T.accent, color: '#FFFFFF', fontWeight: 700, fontSize: 13.5, border: 'none', cursor: formLoading ? 'not-allowed' : 'pointer', opacity: formLoading ? 0.6 : 1, fontFamily: 'inherit' }}
               >
                 {formLoading ? 'Saving…' : editTarget ? 'Save Changes' : 'Add Profile'}
               </button>
@@ -688,47 +642,125 @@ function PricingProfilesSection() {
   );
 }
 
+// ── Data Export section ────────────────────────────────────────────────────────
+function DataExportSection() {
+  const [exporting, setExporting] = useState(false);
+  const [lastExport, setLastExport] = useState(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get('/export');
+      const payload = res.data.data;
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `smart-menu-pricing-export-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setLastExport(new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }));
+    } catch {
+      // silently fail — user will see no download
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <SectionCard title="Data Backup & Export" description="Download a full JSON snapshot of all your data for safekeeping or migration" defaultOpen={false}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+          {[
+            { label: 'Ingredients', desc: 'All ingredient records' },
+            { label: 'Prices', desc: 'Full price history' },
+            { label: 'Recipes', desc: 'All recipes + ingredients' },
+            { label: 'Costing History', desc: 'All computation snapshots' },
+            { label: 'Pricing Profiles', desc: 'Settings configurations' },
+          ].map(({ label, desc }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#FDFBF8', border: '1px solid #EFE8DE', borderRadius: 12 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.accent, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{label}</div>
+                <div style={{ fontSize: 11.5, color: T.textMuted }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, height: 40, padding: '0 20px', borderRadius: 12, background: T.accent, color: '#FFFFFF', fontWeight: 700, fontSize: 13.5, border: 'none', cursor: exporting ? 'not-allowed' : 'pointer', opacity: exporting ? 0.65 : 1, fontFamily: 'inherit' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v8M5 7l3 3 3-3M2 12h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {exporting ? 'Preparing…' : 'Export as JSON'}
+          </button>
+          {lastExport && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: 'oklch(0.44 0.12 145)', background: 'oklch(0.955 0.058 145)', padding: '4px 10px', borderRadius: 20 }}>
+              <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 16 16">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 8l5 5 7-7"/>
+              </svg>
+              Downloaded at {lastExport}
+            </span>
+          )}
+        </div>
+        <p style={{ margin: 0, fontSize: 12, color: T.textMuted }}>
+          The exported file includes all 5 data tables. Store it safely — it can be used to restore or migrate your data.
+        </p>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ── About section ──────────────────────────────────────────────────────────────
 function AboutSection() {
   const prefs = loadPrefs();
   return (
-    <SectionCard title="About System" description="Smart Menu Pricing capstone project information">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div className="space-y-3">
+    <SectionCard title="About System" description="Smart Menu Pricing capstone project information" defaultOpen={false}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
             { label: 'System',    value: 'Smart Menu Pricing' },
             { label: 'Version',   value: 'Sprint 4 Final' },
             { label: 'Purpose',   value: 'Food cost calculation & price recommendation' },
             { label: 'Coverage',  value: 'Kidapawan City, Philippines (DTI/DA Region XII)' },
           ].map(({ label, value }) => (
-            <div key={label} className="flex gap-3">
-              <span className="text-xs font-medium text-gray-400 w-20 flex-shrink-0 pt-0.5">{label}</span>
-              <span className="text-xs text-gray-700">{value}</span>
+            <div key={label} style={{ display: 'flex', gap: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, width: 72, flexShrink: 0, paddingTop: 1 }}>{label}</span>
+              <span style={{ fontSize: 12.5, color: T.textSecond }}>{value}</span>
             </div>
           ))}
         </div>
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
-            { label: 'Backend',   value: 'Node.js + Express REST API' },
-            { label: 'Database',  value: 'MySQL (smart_menu_pricing)' },
-            { label: 'Frontend',  value: 'React + Vite + Tailwind CSS v4' },
+            { label: 'Backend',    value: 'Node.js + Express REST API' },
+            { label: 'Database',   value: 'MySQL (smart_menu_pricing)' },
+            { label: 'Frontend',   value: 'React + Vite + Tailwind CSS v4' },
             { label: 'Extraction', value: 'Axios + Cheerio + pdf-parse + Tesseract.js' },
           ].map(({ label, value }) => (
-            <div key={label} className="flex gap-3">
-              <span className="text-xs font-medium text-gray-400 w-20 flex-shrink-0 pt-0.5">{label}</span>
-              <span className="text-xs text-gray-700 font-mono">{value}</span>
+            <div key={label} style={{ display: 'flex', gap: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, width: 72, flexShrink: 0, paddingTop: 1 }}>{label}</span>
+              <span style={{ fontSize: 12, color: T.textSecond, fontFamily: 'monospace' }}>{value}</span>
             </div>
           ))}
         </div>
       </div>
 
       {prefs.restaurantName && (
-        <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-400">
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #F3EDE4', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: T.textMuted }}>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
             <path d="M8 1L2 5v9h4v-4h4v4h4V5L8 1z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
           </svg>
-          Currently configured for <span className="font-medium text-gray-600 ml-1">{prefs.restaurantName}</span>
-          {prefs.location && <span className="ml-1">· {prefs.location}</span>}
+          Currently configured for <span style={{ fontWeight: 600, color: T.textSecond, marginLeft: 4 }}>{prefs.restaurantName}</span>
+          {prefs.location && <span style={{ marginLeft: 4 }}>· {prefs.location}</span>}
         </div>
       )}
     </SectionCard>
@@ -738,18 +770,11 @@ function AboutSection() {
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function Settings() {
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Manage your restaurant profile, preferences, and pricing profiles
-        </p>
-      </div>
-
-      <BrandAppearanceSection />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 860 }}>
       <RestaurantProfileSection />
       <PreferencesSection />
       <PricingProfilesSection />
+      <DataExportSection />
       <AboutSection />
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 // options: [{ value: string, label: string, description?: string }]
 export default function Select({
@@ -11,9 +12,23 @@ export default function Select({
   style = {},
 }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
   const ref = useRef(null);
 
   const selected = options.find(o => String(o.value) === String(value));
+
+  const openDropdown = () => {
+    if (disabled) return;
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setDropPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+    setOpen(o => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +52,7 @@ export default function Select({
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
+        onClick={openDropdown}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -91,20 +106,20 @@ export default function Select({
         </svg>
       </button>
 
-      {/* Dropdown panel */}
-      {open && (
+      {/* Dropdown panel — rendered in a portal to escape overflow:hidden ancestors */}
+      {open && createPortal(
         <div
           style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            right: 0,
+            position: 'fixed',
+            top: dropPos.top,
+            left: dropPos.left,
+            width: dropPos.width,
             background: 'white',
             border: '1px solid #EAEAEA',
             borderRadius: '10px',
             boxShadow: '0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
             overflow: 'hidden auto',
-            zIndex: 9999,
+            zIndex: 99999,
             maxHeight: '260px',
           }}
         >
@@ -116,7 +131,8 @@ export default function Select({
               onClick={() => { onChange(opt.value); setOpen(false); }}
             />
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

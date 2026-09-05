@@ -1,81 +1,75 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import api from '../lib/api';
 import Select from '../components/Select';
+import { SkeletonTable } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
+
+/* ─── Design tokens ────────────────────────────────────────────────────────── */
+const T = {
+  canvasBg:    '#FBF8F3',
+  cardBg:      '#FFFFFF',
+  cardBorder:  '1px solid #EFE8DE',
+  cardRadius:  '20px',
+  accent:      'var(--accent, #4C5D3E)',
+  accentLight: 'oklch(0.955 0.021 138)',
+  textPrimary: '#24201C',
+  textSecond:  '#6B625A',
+  textMuted:   '#8C837B',
+  rowDivider:  '1px solid #F3EDE4',
+  rowHover:    '#FDFBF8',
+  tblHead:     '#A79E94',
+  tblHeadBg:   '#FDFBF8',
+  inputBorder: '#E7DFD4',
+  inputBg:     '#FDFBF8',
+  focusShadow: '0 0 0 4px oklch(0.945 0.028 138)',
+};
 
 const SOURCES = [
   { value: 'dti', label: 'DTI — Department of Trade & Industry', description: 'dti.gov.ph price bulletins' },
   { value: 'da',  label: 'DA — Department of Agriculture',       description: 'da.gov.ph price bulletins' },
 ];
 
-// ── Status helpers ────────────────────────────────────────────────────────────
-
+/* ─── Status helpers ─────────────────────────────────────────────────────── */
 function getStatus(entry) {
   if (entry.matched === true && !entry.flagged) return 'matched';
   if (entry.matched === 'partial')              return 'partial';
   if (entry.matched === false)                  return 'no_match';
-  return 'flagged'; // matched===true but flagged by normalizer (unusual price/unit)
+  return 'flagged';
 }
 
 const STATUS_META = {
-  matched:  { label: 'Matched',   bg: '#f0fdf4', color: '#16a34a', dot: '#22c55e' },
-  partial:  { label: 'Partial',   bg: '#eff6ff', color: '#2563eb', dot: '#60a5fa' },
-  flagged:  { label: 'Flagged',   bg: '#fffbeb', color: '#d97706', dot: '#fbbf24' },
-  no_match: { label: 'No Match',  bg: '#fef2f2', color: '#dc2626', dot: '#f87171' },
+  matched:  { label: 'Matched',      bg: 'oklch(0.955 0.058 145)', color: 'oklch(0.44 0.12 145)', dot: '#4ade80' },
+  partial:  { label: 'Needs review', bg: 'oklch(0.975 0.04 85)',   color: 'oklch(0.55 0.12 85)',  dot: '#fbbf24' },
+  flagged:  { label: 'Needs review', bg: 'oklch(0.975 0.04 85)',   color: 'oklch(0.55 0.12 85)',  dot: '#fbbf24' },
+  no_match: { label: 'No match',     bg: '#F3EDE4',                 color: T.textMuted,            dot: '#C5BCAF' },
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+/* ─── Sub-components ─────────────────────────────────────────────────────── */
 
-function Spinner() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3">
-      <div
-        className="w-8 h-8 rounded-full border-2 border-gray-200 animate-spin"
-        style={{ borderTopColor: 'var(--accent)' }}
-      />
-      <p className="text-sm text-gray-400">Extracting prices…</p>
-    </div>
-  );
-}
-
-function Toast({ message, type, onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 4000);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  const isSuccess = type === 'success';
-  return (
-    <div
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium"
-      style={{
-        backgroundColor: isSuccess ? '#f0fdf4' : '#fef2f2',
-        color: isSuccess ? '#15803d' : '#dc2626',
-        border: `1px solid ${isSuccess ? '#bbf7d0' : '#fecaca'}`,
-        minWidth: '260px',
-      }}
-    >
-      <span className="text-lg">{isSuccess ? '✓' : '✕'}</span>
-      {message}
-    </div>
-  );
-}
-
-function StatusBadge({ entry }) {
+function StatusPill({ entry }) {
   const status = getStatus(entry);
   const meta = STATUS_META[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full cursor-default"
-      style={{ backgroundColor: meta.bg, color: meta.color }}
       title={entry.flagged && entry.flag_reason ? entry.flag_reason : undefined}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        fontSize: 12,
+        fontWeight: 700,
+        padding: '3px 10px',
+        borderRadius: 20,
+        background: meta.bg,
+        color: meta.color,
+        cursor: 'default',
+        whiteSpace: 'nowrap',
+      }}
     >
-      <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{ backgroundColor: meta.dot }}
-      />
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: meta.dot, flexShrink: 0 }} />
       {meta.label}
       {entry.flagged && entry.flag_reason && (
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="opacity-60">
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.6 }}>
           <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
           <path d="M8 7v4M8 5.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
@@ -84,6 +78,127 @@ function StatusBadge({ entry }) {
   );
 }
 
+function UploadIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="var(--accent,#4C5D3E)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <polyline points="17 8 12 3 7 8" stroke="var(--accent,#4C5D3E)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <line x1="12" y1="3" x2="12" y2="15" stroke="var(--accent,#4C5D3E)" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M8 2c-2 2-2 8 0 12M8 2c2 2 2 8 0 12M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function StyledInput({ value, onChange, type = 'text', placeholder, required }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        flex: 1,
+        height: 44,
+        borderRadius: 13,
+        border: `1px solid ${focused ? 'var(--accent,#4C5D3E)' : T.inputBorder}`,
+        background: focused ? '#FFFFFF' : T.inputBg,
+        boxShadow: focused ? T.focusShadow : 'none',
+        fontSize: 14,
+        color: T.textPrimary,
+        padding: '0 14px',
+        outline: 'none',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+        fontFamily: 'inherit',
+      }}
+    />
+  );
+}
+
+function PrimaryBtn({ children, onClick, disabled, type = 'button', style: extraStyle }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        height: 44,
+        padding: '0 20px',
+        borderRadius: 13,
+        background: 'var(--accent,#4C5D3E)',
+        color: '#FFFFFF',
+        fontWeight: 700,
+        fontSize: 14,
+        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontFamily: 'inherit',
+        boxShadow: '0 8px 20px rgba(70,86,56,0.26)',
+        transform: (!disabled && hovered) ? 'translateY(-2px)' : 'none',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'transform 0.15s, box-shadow 0.15s, opacity 0.15s',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+        ...extraStyle,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SecondaryBtn({ children, onClick, disabled, type = 'button', style: extraStyle }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        height: 40,
+        padding: '0 18px',
+        borderRadius: 12,
+        background: hovered ? '#FDFBF8' : '#FFFFFF',
+        border: '1px solid #E7DFD4',
+        color: '#4A423B',
+        fontWeight: 600,
+        fontSize: 13.5,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        fontFamily: 'inherit',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'background 0.15s',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
+        ...extraStyle,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ─── Drop zone ─────────────────────────────────────────────────────────── */
 function Dropzone({ file, onFile, accept }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
@@ -95,90 +210,164 @@ function Dropzone({ file, onFile, accept }) {
     if (dropped) onFile(dropped);
   };
 
+  const ext = file ? file.name.split('.').pop().toUpperCase() : '';
+  const isPdf = ext === 'PDF';
+  const isImg = ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(ext);
+  const badgeColor = isPdf ? 'oklch(0.58 0.16 28)' : isImg ? 'oklch(0.44 0.09 150)' : T.textMuted;
+
   return (
-    <div
-      onClick={() => inputRef.current?.click()}
-      onDragOver={e => { e.preventDefault(); setDragging(true); }}
-      onDragEnter={e => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={handleDrop}
-      className="relative rounded-xl border-2 border-dashed cursor-pointer transition-all duration-150 flex flex-col items-center justify-center py-10 px-6 text-center select-none"
-      style={{
-        borderColor: dragging ? 'var(--accent)' : file ? 'var(--accent-ring)' : '#e5e7eb',
-        backgroundColor: dragging ? 'var(--accent-light)' : file ? 'var(--accent-light)' : '#fafafa',
-      }}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); }}
-      />
-      {file ? (
-        <>
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center mb-3"
-            style={{ backgroundColor: '#d1fae5' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <polyline points="14 2 14 8 20 8" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragEnter={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        style={{
+          border: `1.5px dashed ${dragging ? 'var(--accent,#4C5D3E)' : '#DFD5C7'}`,
+          borderRadius: 18,
+          padding: '40px 24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+          textAlign: 'center',
+          background: dragging ? '#FFFFFF' : T.inputBg,
+          cursor: 'pointer',
+          transition: 'border-color 0.15s, background 0.15s',
+          userSelect: 'none',
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          style={{ display: 'none' }}
+          onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); }}
+        />
+
+        {/* Icon box */}
+        <div style={{
+          width: 52,
+          height: 52,
+          borderRadius: 17,
+          background: 'oklch(0.955 0.021 138)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <UploadIcon />
+        </div>
+
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 600, color: T.textPrimary, marginBottom: 5,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif",
+          }}>
+            Drop your price bulletin here
           </div>
-          <p className="text-sm font-semibold text-gray-800 break-all max-w-xs">{file.name}</p>
-          <p className="text-xs text-gray-400 mt-1">{(file.size / 1024).toFixed(0)} KB · Click to change</p>
-        </>
-      ) : (
-        <>
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center mb-3"
-            style={{ backgroundColor: '#f3f4f6' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <polyline points="17 8 12 3 7 8" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <line x1="12" y1="3" x2="12" y2="15" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+          <div style={{ fontSize: 13.5, color: '#7A716A', maxWidth: '46ch', margin: '0 auto' }}>
+            PDF, image or saved web page from DTI or DA. We'll read the prices for you.
           </div>
-          <p className="text-sm font-medium text-gray-700">Drop your file here</p>
-          <p className="text-xs text-gray-400 mt-1">or click to browse</p>
-          <p className="text-xs text-gray-300 mt-2">PDF · PNG · JPG · HTML</p>
-        </>
+        </div>
+
+        <SecondaryBtn style={{ marginTop: 2 }}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+            <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Upload File
+        </SecondaryBtn>
+      </div>
+
+      {/* File preview row */}
+      {file && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 16,
+          padding: '12px 14px',
+          borderRadius: 14,
+          border: '1px solid #EFE8DE',
+          background: T.inputBg,
+        }}>
+          {/* Badge */}
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 11,
+            background: '#FFFFFF',
+            border: '1px solid #EFE8DE',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'monospace',
+            fontSize: 10,
+            fontWeight: 700,
+            color: badgeColor,
+            flexShrink: 0,
+          }}>
+            {ext || 'FILE'}
+          </div>
+
+          {/* Name + size */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {file.name}
+            </div>
+            <div style={{ fontSize: 12, color: '#9A9088', marginTop: 2 }}>
+              {(file.size / 1024).toFixed(0)} KB
+            </div>
+          </div>
+
+          {/* Clear */}
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onFile(null); }}
+            style={{
+              width: 28, height: 28, borderRadius: 8,
+              border: '1px solid #EFE8DE', background: '#FFFFFF',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: T.textMuted, flexShrink: 0,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
       )}
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
+/* ─── Main page ─────────────────────────────────────────────────────────── */
 export default function Extraction() {
+  const toast = useToast();
+
   const [activeTab, setActiveTab] = useState('upload');
 
   // Upload tab
-  const [file, setFile]           = useState(null);
+  const [file, setFile]               = useState(null);
   const [uploadSource, setUploadSource] = useState('dti');
 
   // URL tab
-  const [url, setUrl]             = useState('');
-  const [urlSource, setUrlSource] = useState('dti');
+  const [url, setUrl]               = useState('');
+  const [urlSource, setUrlSource]   = useState('dti');
 
   // Shared
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState('');
-  const [entries, setEntries]     = useState(null);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [entries, setEntries]       = useState(null);
   const [extractMsg, setExtractMsg] = useState('');
 
   // Save
-  const [saving, setSaving]       = useState(false);
-  const [toast, setToast]         = useState(null);
-
-  const dismissToast = useCallback(() => setToast(null), []);
+  const [saving, setSaving] = useState(false);
 
   const resetResults = () => { setEntries(null); setExtractMsg(''); setError(''); };
 
-  // ── Extract ─────────────────────────────────────────────────────────────────
-
+  /* ── Extract ── */
   const handleUploadExtract = async (e) => {
     e.preventDefault();
     if (!file) { setError('Please select a file.'); return; }
@@ -195,7 +384,9 @@ export default function Extraction() {
       setEntries(res.data.data || []);
       setExtractMsg(res.data.message || '');
     } catch (err) {
-      setError(err.response?.data?.message || 'Extraction failed.');
+      const msg = err.response?.data?.message || 'Extraction failed.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -211,192 +402,272 @@ export default function Extraction() {
       setEntries(res.data.data || []);
       setExtractMsg(res.data.message || '');
     } catch (err) {
-      setError(err.response?.data?.message || 'Extraction failed.');
+      const msg = err.response?.data?.message || 'Extraction failed.';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Save ────────────────────────────────────────────────────────────────────
-
+  /* ── Save ── */
   const handleSave = async () => {
     if (!entries?.length) return;
     setSaving(true);
     try {
       const res = await api.post('/extraction/save', { entries });
       const { saved, skipped } = res.data.data;
-      setToast({
-        type: 'success',
-        message: `${saved} ${saved === 1 ? 'price' : 'prices'} saved${skipped > 0 ? `, ${skipped} skipped` : ''}`,
-      });
+      toast.success(`${saved} ${saved === 1 ? 'price' : 'prices'} saved to database${skipped > 0 ? `, ${skipped} skipped` : ''}`);
     } catch (err) {
-      setToast({ type: 'error', message: err.response?.data?.message || 'Save failed.' });
+      toast.error(err.response?.data?.message || 'Save failed.');
     } finally {
       setSaving(false);
     }
   };
 
-  // ── Derived counts ───────────────────────────────────────────────────────────
-
-  const saveable   = entries?.filter(e => e.matched === true && !e.flagged).length ?? 0;
-  const partial    = entries?.filter(e => e.matched === 'partial').length ?? 0;
-  const noMatch    = entries?.filter(e => e.matched === false).length ?? 0;
-  const dataIssue  = entries?.filter(e => e.matched === true && e.flagged).length ?? 0;
+  /* ── Counts ── */
+  const saveable    = entries?.filter(e => e.matched === true && !e.flagged).length ?? 0;
+  const partial     = entries?.filter(e => e.matched === 'partial').length ?? 0;
+  const noMatch     = entries?.filter(e => e.matched === false).length ?? 0;
+  const dataIssue   = entries?.filter(e => e.matched === true && e.flagged).length ?? 0;
   const needsReview = partial + noMatch + dataIssue;
+  const totalRows   = entries?.length ?? 0;
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-
+  /* ── Render ── */
   return (
-    <div className="max-w-4xl space-y-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <style>{`
+        @keyframes riseIn {
+          from { opacity:0; transform:translateY(14px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+      `}</style>
 
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Price Extraction</h2>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Pull ingredient prices from DTI/DA bulletins — upload a file or fetch from a URL
-        </p>
-      </div>
-
-      {/* Tab card */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-
-        {/* Tab headers */}
-        <div className="flex border-b border-gray-100">
+      {/* ── Tab bar + card ── */}
+      <div style={{
+        background: T.cardBg,
+        border: T.cardBorder,
+        borderRadius: T.cardRadius,
+        overflow: 'hidden',
+        padding: 22,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 22,
+      }}>
+        {/* Tab bar */}
+        <div style={{ display: 'inline-flex', padding: 4, borderRadius: 14, background: '#F3EDE4', gap: 4, alignSelf: 'flex-start' }}>
           {[
-            { id: 'upload', label: 'Upload File', icon: (
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )},
-            { id: 'url', label: 'Fetch URL', icon: (
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M8 2c-2 2-2 8 0 12M8 2c2 2 2 8 0 12M2 8h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            )},
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveTab(tab.id); resetResults(); }}
-              className={[
-                'flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px',
-                activeTab === tab.id
-                  ? 'text-emerald-600 border-emerald-500'
-                  : 'text-gray-400 border-transparent hover:text-gray-600',
-              ].join(' ')}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+            {
+              id: 'upload', label: 'Upload File',
+              icon: (
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M8 2v8M5 5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ),
+            },
+            {
+              id: 'url', label: 'Fetch URL',
+              icon: <GlobeIcon />,
+            },
+          ].map(tab => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); resetResults(); }}
+                style={{
+                  height: 36,
+                  padding: '0 16px',
+                  borderRadius: 11,
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: active ? '#FFFFFF' : 'transparent',
+                  color: active ? T.textPrimary : T.textMuted,
+                  boxShadow: active ? '0 2px 8px rgba(36,32,28,0.08)' : 'none',
+                  transition: 'background 0.15s, color 0.15s, box-shadow 0.15s',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  fontFamily: 'inherit',
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Tab panels */}
-        <div className="p-6">
-          {activeTab === 'upload' && (
-            <form onSubmit={handleUploadExtract} className="space-y-4">
-              <Dropzone
-                file={file}
-                onFile={setFile}
-                accept=".pdf,.png,.jpg,.jpeg,.html,.htm"
-              />
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Source</label>
-                <Select
-                  value={uploadSource}
-                  onChange={setUploadSource}
-                  options={SOURCES}
-                />
-              </div>
-              {error && <p className="text-red-500 text-xs">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading || !file}
-                className="w-full py-2.5 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: 'var(--accent)' }}
-              >
-                {loading ? 'Extracting…' : 'Extract Prices'}
-              </button>
-            </form>
-          )}
+        {activeTab === 'upload' && (
+          <form onSubmit={handleUploadExtract} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <Dropzone
+              file={file}
+              onFile={setFile}
+              accept=".pdf,.png,.jpg,.jpeg,.html,.htm"
+            />
 
-          {activeTab === 'url' && (
-            <form onSubmit={handleUrlExtract} className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 320 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Source</label>
+              <Select value={uploadSource} onChange={setUploadSource} options={SOURCES} />
+            </div>
+
+            {error && <p style={{ fontSize: 13, color: 'oklch(0.58 0.16 28)', margin: 0 }}>{error}</p>}
+
+            {file && (
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Bulletin URL</label>
-                <input
+                <PrimaryBtn type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span style={{
+                        width: 14, height: 14, borderRadius: '50%',
+                        border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff',
+                        display: 'inline-block', animation: 'spin 0.7s linear infinite',
+                      }} />
+                      Extracting…
+                    </>
+                  ) : 'Extract Prices'}
+                </PrimaryBtn>
+              </div>
+            )}
+          </form>
+        )}
+
+        {activeTab === 'url' && (
+          <form onSubmit={handleUrlExtract} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Bulletin URL</label>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <StyledInput
                   type="url"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
-                  placeholder="https://www.dti.gov.ph/..."
                   value={url}
                   onChange={e => setUrl(e.target.value)}
+                  placeholder="https://www.dti.gov.ph/..."
                   required
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  Paste the URL of a DTI or DA price bulletin page. PDF links are auto-detected.
-                </p>
+                <PrimaryBtn type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span style={{
+                        width: 14, height: 14, borderRadius: '50%',
+                        border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff',
+                        display: 'inline-block', animation: 'spin 0.7s linear infinite',
+                      }} />
+                      Fetching…
+                    </>
+                  ) : 'Fetch URL'}
+                </PrimaryBtn>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Source</label>
-                <Select
-                  value={urlSource}
-                  onChange={setUrlSource}
-                  options={SOURCES}
-                />
-              </div>
-              {error && <p className="text-red-500 text-xs">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-2.5 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: 'var(--accent)' }}
-              >
-                {loading ? 'Fetching…' : 'Fetch & Extract'}
-              </button>
-            </form>
-          )}
-        </div>
+              <p style={{ fontSize: 12.5, color: T.textMuted, margin: 0 }}>
+                Paste a government price bulletin page. We read the table and match each item to your ingredients.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 320 }}>
+              <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Source</label>
+              <Select value={urlSource} onChange={setUrlSource} options={SOURCES} />
+            </div>
+
+            {error && <p style={{ fontSize: 13, color: 'oklch(0.58 0.16 28)', margin: 0 }}>{error}</p>}
+          </form>
+        )}
       </div>
 
-      {/* Loading overlay (full-width spinner below the card) */}
-      {loading && <Spinner />}
+      {/* Loading skeleton */}
+      {loading && (
+        <div style={{
+          background: T.cardBg, border: T.cardBorder, borderRadius: T.cardRadius, padding: 20,
+        }}>
+          <SkeletonTable rows={5} cols={5} />
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && entries === null && (
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <polyline points="17 8 12 3 7 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="empty-state-title">No results yet</div>
+          <div className="empty-state-subtitle">Upload a price bulletin or fetch from a URL to extract ingredient prices.</div>
+        </div>
+      )}
 
       {/* Results */}
       {!loading && entries !== null && (
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-
+        <div style={{
+          background: T.cardBg,
+          border: T.cardBorder,
+          borderRadius: T.cardRadius,
+          overflow: 'hidden',
+          animation: 'riseIn 420ms cubic-bezier(0.22,1,0.36,1) both',
+        }}>
           {/* Results header */}
-          <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
+          <div style={{
+            padding: '18px 22px',
+            borderBottom: '1px solid #F3EDE4',
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+          }}>
             <div>
-              <h3 className="font-semibold text-gray-800 text-sm">Extraction Results</h3>
-              <p className="text-xs text-gray-400 mt-0.5">{extractMsg}</p>
-              <div className="flex items-center gap-3 mt-2 flex-wrap">
-                {[
-                  { label: `${saveable} matched`,                color: '#16a34a', bg: '#f0fdf4' },
-                  ...(partial   > 0 ? [{ label: `${partial} partial`,   color: '#2563eb', bg: '#eff6ff' }] : []),
-                  ...(noMatch   > 0 ? [{ label: `${noMatch} no match`,  color: '#dc2626', bg: '#fef2f2' }] : []),
-                  ...(dataIssue > 0 ? [{ label: `${dataIssue} flagged`, color: '#d97706', bg: '#fffbeb' }] : []),
-                ].map(chip => (
-                  <span
-                    key={chip.label}
-                    className="text-xs font-medium px-2 py-0.5 rounded-full"
-                    style={{ color: chip.color, backgroundColor: chip.bg }}
-                  >
-                    {chip.label}
+              <h2 style={{
+                fontSize: 16.5, fontWeight: 600, color: T.textPrimary, margin: 0,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif",
+              }}>
+                Review before saving
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12.5, color: T.textMuted }}>
+                  {saveable} of {totalRows} rows matched
+                </span>
+                {partial > 0 && (
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                    background: 'oklch(0.975 0.04 85)', color: 'oklch(0.55 0.12 85)',
+                  }}>
+                    {partial} partial
                   </span>
-                ))}
+                )}
+                {noMatch > 0 && (
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                    background: '#F3EDE4', color: T.textMuted,
+                  }}>
+                    {noMatch} no match
+                  </span>
+                )}
+                {dataIssue > 0 && (
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                    background: 'oklch(0.975 0.04 85)', color: 'oklch(0.55 0.12 85)',
+                  }}>
+                    {dataIssue} flagged
+                  </span>
+                )}
               </div>
+              {extractMsg && (
+                <p style={{ fontSize: 12, color: T.textMuted, margin: '4px 0 0' }}>{extractMsg}</p>
+              )}
             </div>
-            <button
-              onClick={handleSave}
-              disabled={saving || saveable === 0}
-              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-opacity hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent)' }}
-            >
+
+            <PrimaryBtn onClick={handleSave} disabled={saving || saveable === 0}>
               {saving ? (
                 <>
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 animate-spin" style={{ borderTopColor: '#fff' }} />
+                  <span style={{
+                    width: 14, height: 14, borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff',
+                    display: 'inline-block', animation: 'spin 0.7s linear infinite',
+                  }} />
                   Saving…
                 </>
               ) : (
@@ -407,65 +678,140 @@ export default function Extraction() {
                   Save {saveable} Valid {saveable === 1 ? 'Match' : 'Matches'}
                 </>
               )}
-            </button>
+            </PrimaryBtn>
           </div>
 
-          {/* Note about non-saveable rows */}
+          {/* Status legend — always visible above the results table.
+              Previously the only explanation was a conditional warning that appeared
+              only when some rows had problems. New users had no way to understand
+              the color-coded badges until something went wrong.
+              This legend is now always shown so users immediately know what each
+              status means before they try to save anything. */}
+          <div style={{
+            padding: '12px 22px',
+            background: 'var(--table-header-bg)',
+            borderBottom: '1px solid var(--divider)',
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '6px 18px',
+          }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 4 }}>Status legend:</span>
+            {[
+              { label: 'Matched',      dot: '#4ade80', desc: 'Price found and linked to an ingredient — will be saved.' },
+              { label: 'Needs review', dot: '#fbbf24', desc: 'Fuzzy match found but confidence is low — verify before saving.' },
+              { label: 'No match',     dot: '#C5BCAF', desc: 'No ingredient found in your list — add the ingredient first, then re-import.' },
+            ].map(item => (
+              <span key={item.label} title={item.desc} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: T.textSecond, cursor: 'default' }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.dot, flexShrink: 0, display: 'inline-block' }} />
+                <strong style={{ fontWeight: 600 }}>{item.label}</strong>
+                <span style={{ color: T.textMuted }}>— {item.desc}</span>
+              </span>
+            ))}
+          </div>
+          {/* Conditional warning — only shown when at least one row is not a clean match.
+              It tells the user exactly how many rows will be skipped so there are no
+              surprises after clicking Save. */}
           {needsReview > 0 && (
-            <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-100 text-xs text-amber-700 flex items-center gap-2">
+            <div style={{
+              padding: '8px 22px',
+              background: 'oklch(0.985 0.025 85)',
+              borderBottom: '1px solid oklch(0.94 0.05 85)',
+              fontSize: 12.5,
+              color: 'oklch(0.50 0.12 85)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+            }}>
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                 <path d="M8 6v3M8 11v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <path d="M6.5 2.5L1 13h14L9.5 2.5a1.7 1.7 0 00-3 0z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
               </svg>
-              Only <strong>Matched</strong> rows will be saved. Partial, No Match, and Flagged rows ({needsReview}) need manual review — hover any badge to see details.
+              {needsReview} row{needsReview !== 1 ? 's' : ''} need manual review and will be skipped when you save.
+              Only the <strong style={{ fontWeight: 700 }}>Matched</strong> rows ({saveable}) will be written to the database.
             </div>
           )}
 
           {entries.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">No price entries found.</div>
+            <div style={{ padding: '48px 22px', textAlign: 'center', color: T.textMuted, fontSize: 14 }}>
+              No price entries found.
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[680px]">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-5 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wide">Extracted Name</th>
-                    <th className="text-left px-5 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wide">Matched Ingredient</th>
-                    <th className="text-left px-5 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wide">Unit</th>
-                    <th className="text-right px-5 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wide">Price</th>
-                    <th className="text-left px-5 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wide">Status</th>
+                  <tr>
+                    {[
+                      { label: 'Extracted Name',     align: 'left', first: true },
+                      { label: 'Matched Ingredient', align: 'left' },
+                      { label: 'Unit',               align: 'left' },
+                      { label: 'Price',              align: 'right' },
+                      { label: 'Status',             align: 'left', last: true },
+                    ].map((h, i) => (
+                      <th key={i} style={{
+                        background: '#FDFBF8',
+                        color: '#A79E94',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.07em',
+                        textTransform: 'uppercase',
+                        padding: '11px 12px',
+                        paddingLeft:  h.first ? 22 : 12,
+                        paddingRight: h.last  ? 22 : 12,
+                        textAlign: h.align,
+                      }}>
+                        {h.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {entries.map((entry, i) => {
-                    const status = getStatus(entry);
-                    const isDataFlagged = status === 'flagged'; // matched but unusual price/unit
-                    const willSave      = status === 'matched';
+                    const status         = getStatus(entry);
+                    const isDataFlagged  = status === 'flagged';
+                    const isNoMatch      = status === 'no_match';
+                    const willSave       = status === 'matched';
+
                     return (
                       <tr
                         key={i}
-                        className={[
-                          i < entries.length - 1 ? 'border-b border-gray-50' : '',
-                          isDataFlagged ? 'bg-amber-50/40' : '',
-                          !willSave ? 'opacity-60' : '',
-                        ].join(' ')}
+                        style={{
+                          borderTop: i === 0 ? 'none' : '1px solid #F3EDE4',
+                          background: isDataFlagged ? 'oklch(0.995 0.01 85)' : 'transparent',
+                          opacity: isNoMatch ? 0.6 : 1,
+                          borderLeft: (isDataFlagged || status === 'partial') ? '3px solid oklch(0.75 0.1 85)' : '3px solid transparent',
+                          transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#FDFBF8'}
+                        onMouseLeave={e => e.currentTarget.style.background = isDataFlagged ? 'oklch(0.995 0.01 85)' : 'transparent'}
                       >
-                        <td className="px-5 py-3 font-medium text-gray-800">{entry.normalized_name}</td>
-                        <td className="px-5 py-3 text-gray-600">
+                        <td style={{ padding: '13px 12px 13px 22px', color: T.textPrimary, fontWeight: 600 }}>
+                          {entry.normalized_name}
+                        </td>
+                        <td style={{ padding: '13px 12px', color: T.textSecond }}>
                           {entry.matched_name
-                            ? <span>{entry.matched_name}</span>
-                            : <span className="text-gray-300 italic">—</span>
+                            ? entry.matched_name
+                            : <span style={{ color: '#D5CCBF', fontStyle: 'italic' }}>—</span>
                           }
                         </td>
-                        <td className="px-5 py-3">
-                          <span className="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        <td style={{ padding: '13px 12px' }}>
+                          <span style={{
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            background: '#F3EDE4',
+                            color: T.textMuted,
+                            padding: '3px 8px',
+                            borderRadius: 8,
+                          }}>
                             {entry.normalized_unit || '—'}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-right font-mono text-gray-700">
+                        <td style={{ padding: '13px 12px', textAlign: 'right', fontFamily: 'monospace', color: T.textPrimary, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                           ₱{parseFloat(entry.price).toFixed(2)}
                         </td>
-                        <td className="px-5 py-3">
-                          <StatusBadge entry={entry} />
+                        <td style={{ padding: '13px 22px 13px 12px' }}>
+                          <StatusPill entry={entry} />
                         </td>
                       </tr>
                     );
@@ -476,9 +822,6 @@ export default function Extraction() {
           )}
         </div>
       )}
-
-      {/* Toast */}
-      {toast && <Toast message={toast.message} type={toast.type} onDone={dismissToast} />}
     </div>
   );
 }

@@ -13,7 +13,7 @@ const computeRecipeCost = async (recipeId, priceSource, db) => {
 
   // Fetch all recipe_ingredients joined with ingredient name
   const [ingredients] = await db.query(
-    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit
+    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit, COALESCE(ri.waste_pct, 0) AS waste_pct
      FROM recipe_ingredients ri
      JOIN ingredients i ON i.id = ri.ingredient_id
      WHERE ri.recipe_id = ?`,
@@ -51,19 +51,25 @@ const computeRecipeCost = async (recipeId, priceSource, db) => {
             [ing.ingredient_id, priceSource]
           );
 
-      const priceRow      = priceRows[0] ?? null;
-      const unit_price    = priceRow ? parseFloat(priceRow.price) : null;
-      const missing_price = unit_price === null;
-      const ingredient_cost = missing_price ? null : parseFloat((ing.quantity * unit_price).toFixed(2));
+      const priceRow         = priceRows[0] ?? null;
+      const unit_price       = priceRow ? parseFloat(priceRow.price) : null;
+      const missing_price    = unit_price === null;
+      const waste_pct        = parseFloat(ing.waste_pct || 0);
+      const effective_quantity = waste_pct > 0
+        ? parseFloat((parseFloat(ing.quantity) / (1 - waste_pct / 100)).toFixed(4))
+        : parseFloat(ing.quantity);
+      const ingredient_cost  = missing_price ? null : parseFloat((effective_quantity * unit_price).toFixed(2));
 
       return {
-        ingredient_id:    ing.ingredient_id,
-        name:             ing.name,
-        quantity:         parseFloat(ing.quantity),
-        unit:             ing.unit,
+        ingredient_id:      ing.ingredient_id,
+        name:               ing.name,
+        quantity:           parseFloat(ing.quantity),
+        unit:               ing.unit,
+        waste_pct,
+        effective_quantity,
         unit_price,
         ingredient_cost,
-        price_source:     priceRow?.price_source ?? null,
+        price_source:       priceRow?.price_source ?? null,
         missing_price,
       };
     })
@@ -157,9 +163,13 @@ const _computeFromPriceMap = (ingredients, priceMap, servings, setting) => {
 
   const costs = ingredients.map((ing) => {
     const raw = priceMap[ing.ingredient_id];
-    const unit_price      = raw != null ? parseFloat(raw) : null;
+    const unit_price  = raw != null ? parseFloat(raw) : null;
+    const waste_pct   = parseFloat(ing.waste_pct || 0);
+    const effective_qty = waste_pct > 0
+      ? parseFloat(ing.quantity) / (1 - waste_pct / 100)
+      : parseFloat(ing.quantity);
     const ingredient_cost = unit_price !== null
-      ? parseFloat((ing.quantity * unit_price).toFixed(2))
+      ? parseFloat((effective_qty * unit_price).toFixed(2))
       : null;
     if (ingredient_cost === null) hasNull = true;
     else total += ingredient_cost;
@@ -193,7 +203,7 @@ const computeImpactAnalysis = async (recipeId, oldPrices, newPrices, pricingSett
   if (recipe.servings === 0) throw new Error(`Recipe "${recipe.name}" has zero servings`);
 
   const [ingredients] = await db.query(
-    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit
+    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit, COALESCE(ri.waste_pct, 0) AS waste_pct
      FROM recipe_ingredients ri
      JOIN ingredients i ON i.id = ri.ingredient_id
      WHERE ri.recipe_id = ?`,
