@@ -19,7 +19,6 @@ import Help         from './pages/Help';
 import Profile      from './pages/Profile';
 import Team         from './pages/Team';
 import Reports      from './pages/Reports';
-import Inventory    from './pages/Inventory';
 
 export default function App() {
   useEffect(() => {
@@ -54,7 +53,6 @@ export default function App() {
           <Route path="profile"     element={<Profile />} />
           <Route path="team"        element={<Team />} />
           <Route path="reports"     element={<Reports />} />
-          <Route path="inventory"   element={<Inventory />} />
         </Route>
 
         {/* Fallback */}

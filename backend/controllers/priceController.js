@@ -45,7 +45,7 @@ const addIngredientPrice = async (req, res) => {
 const getPriceHistory = async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM ingredient_prices WHERE ingredient_id = ? ORDER BY extraction_date DESC',
+      'SELECT * FROM ingredient_prices WHERE ingredient_id = ? ORDER BY extraction_date DESC, id DESC',
       [req.params.ingredientId]
     );
     res.json({ success: true, data: rows.map(normalizeRow), message: '' });
@@ -57,7 +57,7 @@ const getPriceHistory = async (req, res) => {
 const getLatestPrice = async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM ingredient_prices WHERE ingredient_id = ? ORDER BY extraction_date DESC LIMIT 1',
+      'SELECT * FROM ingredient_prices WHERE ingredient_id = ? ORDER BY extraction_date DESC, id DESC LIMIT 1',
       [req.params.ingredientId]
     );
     if (!rows.length) {

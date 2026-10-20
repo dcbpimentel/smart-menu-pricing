@@ -227,7 +227,7 @@ export default function Profile() {
     setNameSaving(true);
     setNameMsg({ text: '', error: false });
     try {
-      const res = await api.put(`/users/${localUser.id}`, { full_name: trimmed });
+      const res = await api.put('/auth/profile', { full_name: trimmed });
       const updated = { ...localUser, full_name: res.data.data.full_name };
       localStorage.setItem('smp_user', JSON.stringify(updated));
       setProfile(p => ({ ...p, full_name: res.data.data.full_name }));
@@ -287,8 +287,8 @@ export default function Profile() {
           backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
         }}>
           <div style={{ animation: 'authOverlayLogo 0.42s 0.08s cubic-bezier(0.22,1,0.36,1) both' }}>
-            <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 20, padding: '14px 28px' }}>
-              <img src="/logo.png" alt="Boyd's Pizza House" style={{ height: 68, width: 'auto', objectFit: 'contain', display: 'block', opacity: 0.9 }} />
+            <div style={{ width: 68, height: 68, borderRadius: 20, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontSize: 26, fontWeight: 900, color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.04em' }}>SM</span>
             </div>
           </div>
           <div style={{ animation: 'authOverlayLogo 0.4s 0.22s cubic-bezier(0.22,1,0.36,1) both', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>

@@ -107,4 +107,23 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { login, me, logout, changePassword };
+const updateProfile = async (req, res) => {
+  try {
+    const { full_name } = req.body;
+    if (!full_name || !full_name.trim()) {
+      return res.status(400).json({ success: false, data: null, message: 'full_name is required' });
+    }
+    const trimmed = full_name.trim();
+    await db.query('UPDATE users SET full_name = ? WHERE id = ?', [trimmed, req.user.id]);
+    const [rows] = await db.query(
+      'SELECT id, username, full_name, role, is_active, created_at FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    const u = rows[0];
+    res.json({ success: true, data: { ...u, is_active: u.is_active === 1 || u.is_active === true }, message: '' });
+  } catch (err) {
+    res.status(500).json({ success: false, data: null, message: err.message });
+  }
+};
+
+module.exports = { login, me, logout, changePassword, updateProfile };

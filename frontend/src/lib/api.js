@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getToken, logout } from './auth';
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api' });
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api' });
 
 api.interceptors.request.use(config => {
   const token = getToken();

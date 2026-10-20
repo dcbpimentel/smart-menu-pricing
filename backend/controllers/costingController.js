@@ -27,27 +27,45 @@ const computeCosting = async (req, res) => {
     let portion_cost      = null;
     let priceResult       = null;
     let output_id         = null;
+    let isDuplicate       = false;
 
     if (recipe_cost !== null) {
       portion_cost = computePortionCost(recipe_cost, costResult.servings);
       priceResult  = await computeRecommendedPrice(portion_cost, pricing_setting_id, db);
 
-      // Persist snapshot to costing_outputs
-      const applied_price_source = `${price_source}:${new Date().toISOString().slice(0, 10)}`;
-      const [insertResult] = await db.query(
-        `INSERT INTO costing_outputs
-           (recipe_id, pricing_setting_id, recipe_cost, portion_cost, recommended_price, applied_price_source, computed_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          costResult.recipe_id,
-          pricing_setting_id,
-          recipe_cost,
-          portion_cost,
-          priceResult.recommended_price,
-          applied_price_source,
-        ]
+      // Deduplication: skip save if last entry for this recipe+settings has identical values
+      const [existing] = await db.query(
+        `SELECT id, recipe_cost, portion_cost, recommended_price
+         FROM costing_outputs
+         WHERE recipe_id = ? AND pricing_setting_id = ?
+         ORDER BY computed_at DESC LIMIT 1`,
+        [costResult.recipe_id, pricing_setting_id]
       );
-      output_id = insertResult.insertId;
+      const last = existing[0];
+      isDuplicate = !!(last
+        && Math.abs(parseFloat(last.recipe_cost)        - recipe_cost)                   < 0.005
+        && Math.abs(parseFloat(last.portion_cost)       - portion_cost)                  < 0.005
+        && Math.abs(parseFloat(last.recommended_price)  - priceResult.recommended_price) < 0.005);
+
+      if (isDuplicate) {
+        output_id = last.id;
+      } else {
+        const applied_price_source = `${price_source}:${new Date().toISOString().slice(0, 10)}`;
+        const [insertResult] = await db.query(
+          `INSERT INTO costing_outputs
+             (recipe_id, pricing_setting_id, recipe_cost, portion_cost, recommended_price, applied_price_source, computed_at)
+           VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+          [
+            costResult.recipe_id,
+            pricing_setting_id,
+            recipe_cost,
+            portion_cost,
+            priceResult.recommended_price,
+            applied_price_source,
+          ]
+        );
+        output_id = insertResult.insertId;
+      }
     }
 
     const isPartial = missing_price_ingredients.length > 0;
@@ -56,6 +74,7 @@ const computeCosting = async (req, res) => {
       success: true,
       data: {
         output_id,
+        is_duplicate:              isDuplicate,
         recipe_id:                 costResult.recipe_id,
         recipe_name:               costResult.recipe_name,
         servings:                  costResult.servings,

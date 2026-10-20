@@ -8,43 +8,68 @@ export default function Select({
   options = [],
   placeholder = 'Select…',
   disabled = false,
+  searchable = false,
   className = '',
   style = {},
 }) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [query, setQuery] = useState('');
   const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
   const ref = useRef(null);
+  const portalRef = useRef(null);
+  const searchRef = useRef(null);
+  const closeTimer = useRef(null);
 
   const selected = options.find(o => String(o.value) === String(value));
 
+  const filtered = searchable && query.trim()
+    ? options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  const closeDropdown = () => {
+    setClosing(true);
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => { setOpen(false); setClosing(false); }, 130);
+  };
+
   const openDropdown = () => {
     if (disabled) return;
-    if (!open && ref.current) {
+    if (open && !closing) { closeDropdown(); return; }
+    if (open && closing) return;
+    clearTimeout(closeTimer.current);
+    if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      setDropPos({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
+      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
     }
-    setOpen(o => !o);
+    setOpen(true);
+    setClosing(false);
+    setQuery('');
   };
+
+  useEffect(() => {
+    if (open && searchable) {
+      setTimeout(() => searchRef.current?.focus(), 30);
+    }
+  }, [open, searchable]);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
-      if (!ref.current?.contains(e.target)) setOpen(false);
+      if (!ref.current?.contains(e.target) && !portalRef.current?.contains(e.target)) {
+        closeDropdown();
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  }, [open, closing]);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (e.key === 'Escape') setOpen(false); };
+    const handler = (e) => { if (e.key === 'Escape') closeDropdown(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open]);
+  }, [open, closing]);
 
   return (
     <div ref={ref} className={className} style={{ position: 'relative', ...style }}>
@@ -109,6 +134,8 @@ export default function Select({
       {/* Dropdown panel — rendered in a portal to escape overflow:hidden ancestors */}
       {open && createPortal(
         <div
+          ref={portalRef}
+          className={closing ? 'drop-close' : 'drop-open'}
           style={{
             position: 'fixed',
             top: dropPos.top,
@@ -117,20 +144,57 @@ export default function Select({
             background: 'white',
             border: '1px solid #EAEAEA',
             borderRadius: '10px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-            overflow: 'hidden auto',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05)',
             zIndex: 99999,
-            maxHeight: '260px',
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '300px',
+            overflow: 'hidden',
           }}
         >
-          {options.map((opt) => (
-            <OptionItem
-              key={opt.value}
-              opt={opt}
-              isSel={String(opt.value) === String(value)}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-            />
-          ))}
+          {searchable && (
+            <div style={{ padding: '8px 8px 4px', flexShrink: 0 }}>
+              <div style={{ position: 'relative' }}>
+                <svg width="13" height="13" viewBox="0 0 15 15" fill="none"
+                  style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }}>
+                  <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M10.5 10.5l2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Type to search…"
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    height: 34, paddingLeft: 28, paddingRight: 10,
+                    border: '1px solid #EAEAEA', borderRadius: 7,
+                    fontSize: 13, color: '#2F3437', outline: 'none',
+                    background: '#FAFAFA',
+                  }}
+                  onFocus={e => e.target.style.borderColor = 'var(--accent, #4C5D3E)'}
+                  onBlur={e => e.target.style.borderColor = '#EAEAEA'}
+                />
+              </div>
+            </div>
+          )}
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>
+                No results
+              </div>
+            ) : (
+              filtered.map((opt) => (
+                <OptionItem
+                  key={opt.value}
+                  opt={opt}
+                  isSel={String(opt.value) === String(value)}
+                  onClick={() => { onChange(opt.value); closeDropdown(); setQuery(''); }}
+                />
+              ))
+            )}
+          </div>
         </div>,
         document.body
       )}

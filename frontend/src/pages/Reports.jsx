@@ -436,7 +436,7 @@ export default function Reports() {
 
             {/* Print footer */}
             <div className="print-only" style={{ display: 'none', padding: '12px 20px', borderTop: T.rowDivider, fontSize: 11, color: T.textMuted }}>
-              Smart Menu Pricing System · Boyd&apos;s Pizza House ·
+              Smart Menu Pricing System ·
               Price update threshold: {priceGapThreshold}% gap or +{foodCostDeviationThreshold}pp over target food cost %
             </div>
           </>

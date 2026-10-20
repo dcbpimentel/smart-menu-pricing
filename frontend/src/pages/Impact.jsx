@@ -4,6 +4,10 @@ import Select from '../components/Select';
 import { SkeletonStats } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { formatCurrency, formatPct } from '../lib/format';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer,
+} from 'recharts';
 
 /* ─── Design tokens ────────────────────────────────────────────────────────── */
 const T = {
@@ -105,14 +109,6 @@ function riseInStyle(delay = 0) {
 
 /* ─── Subcomponents ──────────────────────────────────────────────────────── */
 
-function ChevronDown() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 function ArrowRight({ color = '#C5BCAF' }) {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -206,82 +202,48 @@ function NewPriceInput({ value, onChange }) {
   );
 }
 
-function StyledSelect({ value, onChange, options, placeholder, minWidth = 280 }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div style={{ position: 'relative', minWidth, display: 'inline-block' }}>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{
-          width: '100%',
-          height: 46,
-          padding: '0 36px 0 12px',
-          borderRadius: 13,
-          border: `1px solid ${focused ? T.accent : T.inputBorder}`,
-          background: focused ? '#FFFFFF' : T.inputBg,
-          boxShadow: focused ? T.focusShadow : 'none',
-          fontSize: 14.5,
-          fontWeight: 600,
-          color: T.textPrimary,
-          appearance: 'none',
-          cursor: 'pointer',
-          outline: 'none',
-          transition: 'border-color 0.15s, box-shadow 0.15s',
-          fontFamily: 'inherit',
-        }}
-      >
-        {placeholder && <option value="">{placeholder}</option>}
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <span style={{
-        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-        pointerEvents: 'none', color: T.textMuted,
-      }}>
-        <ChevronDown />
-      </span>
-    </div>
-  );
-}
+/* ─── Ingredient cost chart ─────────────────────────────────────────────── */
+function IngredientCostChart({ impacts }) {
+  if (!impacts?.length) return null;
 
-function SmallSelect({ value, onChange, options, placeholder, minWidth = 220 }) {
-  const [focused, setFocused] = useState(false);
+  const data = impacts.map((imp) => ({
+    name: imp.name.length > 16 ? imp.name.slice(0, 15) + '…' : imp.name,
+    fullName: imp.name,
+    Current: parseFloat(imp.ingredient_cost_old) || 0,
+    Simulated: parseFloat(imp.ingredient_cost_new) || 0,
+  }));
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    const full = data.find((d) => d.name === label)?.fullName || label;
+    return (
+      <div style={{ background: '#FFF', border: '1px solid #EFE8DE', borderRadius: 10, padding: '10px 14px', boxShadow: '0 4px 16px rgba(36,32,28,0.10)', fontFamily: 'inherit' }}>
+        <p style={{ fontWeight: 700, fontSize: 12, color: '#24201C', marginBottom: 6 }}>{full}</p>
+        {payload.map((p) => (
+          <p key={p.dataKey} style={{ fontSize: 12, color: p.color, margin: '2px 0' }}>
+            {p.dataKey}: <strong>₱{p.value.toFixed(2)}</strong>
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div style={{ position: 'relative', minWidth, display: 'inline-block' }}>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{
-          width: '100%',
-          height: 44,
-          padding: '0 36px 0 12px',
-          borderRadius: 12,
-          border: `1px solid ${focused ? T.accent : T.inputBorder}`,
-          background: focused ? '#FFFFFF' : T.inputBg,
-          boxShadow: focused ? T.focusShadow : 'none',
-          fontSize: 14,
-          fontWeight: 600,
-          color: T.textPrimary,
-          appearance: 'none',
-          cursor: 'pointer',
-          outline: 'none',
-          transition: 'border-color 0.15s, box-shadow 0.15s',
-          fontFamily: 'inherit',
-        }}
-      >
-        {placeholder && <option value="">{placeholder}</option>}
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <span style={{
-        position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-        pointerEvents: 'none', color: T.textMuted,
-      }}>
-        <ChevronDown />
-      </span>
+    <div style={{ background: '#FFFFFF', borderRadius: 20, border: '1px solid #EFE8DE', padding: '20px 24px 12px' }}>
+      <p style={{ fontSize: 12, fontWeight: 700, color: '#8C837B', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 16 }}>
+        Ingredient Cost Comparison
+      </p>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} barCategoryGap="30%" barGap={4} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#F3EDE4" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#8C837B', fontFamily: 'inherit' }} axisLine={false} tickLine={false} />
+          <YAxis tickFormatter={(v) => `₱${v}`} tick={{ fontSize: 11, fill: '#8C837B', fontFamily: 'inherit' }} axisLine={false} tickLine={false} width={52} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(76,93,62,0.05)' }} />
+          <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'inherit', paddingTop: 8 }} />
+          <Bar dataKey="Current" fill="#C8BEAF" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Simulated" fill="#4C5D3E" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -404,7 +366,8 @@ function DiffStatCards({ result }) {
         const zero = c.diff == null || c.diff === 0;
         const valueColor = zero ? T.accent : up ? 'oklch(0.58 0.16 28)' : T.accent;
         return (
-          <div key={i} style={{
+          <div key={i} className="card-spring" style={{
+            '--i': i,
             background: '#FFFFFF',
             border: '1px solid #EFE8DE',
             borderRadius: 18,
@@ -507,10 +470,11 @@ function IngredientImpactTable({ impacts }) {
               return (
                 <tr
                   key={row.ingredient_id ?? i}
+                  className="row-interactive"
                   style={{
                     borderTop: i === 0 ? 'none' : T.rowDivider,
                     opacity: !changed ? 0.7 : 1,
-                    transition: 'background 0.1s',
+                    transition: 'background 0.1s, transform 0.1s ease',
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -735,9 +699,13 @@ export default function Impact() {
 
       {/* ── Input card ── */}
       <div style={styles.card}>
+        {/* Intro kicker */}
+        <div style={{ padding: '14px 22px 0', fontSize: 13, color: T.textMuted }}>
+          See how a price increase from your supplier affects each dish's cost and suggested selling price.
+        </div>
         {/* Header row */}
         <div style={{
-          padding: '20px 22px',
+          padding: '14px 22px 10px',
           borderBottom: T.rowDivider,
           display: 'flex',
           alignItems: 'flex-end',
@@ -748,12 +716,12 @@ export default function Impact() {
           {/* Recipe selector */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7, minWidth: 280 }}>
             <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Recipe</label>
-            <StyledSelect
+            <Select
               value={recipeId}
               onChange={setRecipeId}
               options={recipes.map(r => ({ value: String(r.id), label: r.name }))}
               placeholder="Select recipe…"
-              minWidth={280}
+              style={{ minWidth: 280 }}
             />
           </div>
 
@@ -761,12 +729,12 @@ export default function Impact() {
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Pricing Profile</label>
-              <SmallSelect
+              <Select
                 value={settingId}
                 onChange={setSettingId}
                 options={settings.map(s => ({ value: String(s.id), label: `${s.label} (${s.target_food_cost_pct}%)` }))}
                 placeholder="Select profile…"
-                minWidth={220}
+                style={{ minWidth: 220 }}
               />
             </div>
             <button
@@ -846,7 +814,8 @@ export default function Impact() {
                   {recipeIngredients.map((ri, i) => (
                     <tr
                       key={ri.ingredient_id}
-                      style={{ borderTop: i === 0 ? 'none' : T.rowDivider }}
+                      className="row-interactive"
+                      style={{ borderTop: i === 0 ? 'none' : T.rowDivider, transition: 'background 0.1s, transform 0.1s ease' }}
                       onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
@@ -890,16 +859,15 @@ export default function Impact() {
       {/* ── Results ── */}
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, ...riseInStyle(0) }}>
-          {/* Row 1: bars + 2x2 cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.05fr', gap: 18, alignItems: 'start' }}>
-            <PriceBars
-              oldPrice={result.old?.recommended_price}
-              newPrice={result.new?.recommended_price}
-            />
-            <DiffStatCards result={result} />
-          </div>
+          {/* Row 1: full-width ingredient cost chart */}
+          {result.ingredient_impacts?.length > 0 && (
+            <IngredientCostChart impacts={result.ingredient_impacts} />
+          )}
 
-          {/* Row 2: ingredient impact table */}
+          {/* Row 2: 2x2 stat cards */}
+          <DiffStatCards result={result} />
+
+          {/* Row 3: ingredient impact table */}
           {result.ingredient_impacts?.length > 0 && (
             <IngredientImpactTable impacts={result.ingredient_impacts} />
           )}

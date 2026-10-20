@@ -13,7 +13,7 @@ const settingsRouter    = require('./routes/settings');
 const extractionRouter  = require('./routes/extraction');
 const costingRouter     = require('./routes/costing');
 const exportRouter      = require('./routes/export');
-const inventoryRouter   = require('./routes/inventory');
+const resetRouter       = require('./routes/reset');
 
 const app = express();
 
@@ -39,7 +39,7 @@ app.use('/api/settings',    verifyToken, settingsRouter);
 app.use('/api/extraction',  verifyToken, extractionRouter);
 app.use('/api/costing',     verifyToken, costingRouter);
 app.use('/api/export',      verifyToken, exportRouter);
-app.use('/api/inventory',   verifyToken, inventoryRouter);
+app.use('/api/reset',       verifyToken, resetRouter);
 
 // Global error handler
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars

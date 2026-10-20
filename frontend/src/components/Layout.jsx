@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, createContext, useContext } from 'rea
 import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import CommandPalette from './CommandPalette';
 import { ToastProvider } from './Toast';
+import FloatingCalculator from './FloatingCalculator';
 // Icons used in the sidebar navigation.
 // Only the icons for the 6 core pages + Settings + Help are kept here.
 // FiBarChart2 (Reports), FiArchive (Inventory), and FiUsers (Team) were
@@ -143,21 +144,42 @@ export default function Layout() {
 
   const sidebarContent = (
     <>
-      {/* Brand header — centered logo + system name */}
+      {/* Brand header — JBD Menu Grid logo */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: iconOnly ? '18px 8px' : '22px 16px 16px', flexShrink: 0 }}>
         {iconOnly ? (
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#FFFFFF', boxShadow: '0 2px 10px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src="/logo.png" alt="Boyd's" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+          <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="30" height="30" viewBox="0 0 28 28" fill="none">
+              <circle cx="4"  cy="4"  r="3.5" fill="#D4E8D8"/>
+              <circle cx="14" cy="4"  r="3.5" fill="#D4E8D8"/>
+              <circle cx="24" cy="4"  r="3.5" fill="#2A6E3A"/>
+              <circle cx="4"  cy="14" r="3.5" fill="#D4E8D8"/>
+              <circle cx="14" cy="14" r="3.5" fill="#2A6E3A"/>
+              <circle cx="24" cy="14" r="3.5" fill="#D4E8D8"/>
+              <circle cx="4"  cy="24" r="3.5" fill="#2A6E3A"/>
+              <circle cx="14" cy="24" r="3.5" fill="#D4E8D8"/>
+              <circle cx="24" cy="24" r="3.5" fill="#D4E8D8"/>
+            </svg>
           </div>
         ) : (
-          <>
-            <div style={{ background: '#FFFFFF', borderRadius: 16, padding: '10px 20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
-              <img src="/logo.png" alt="Boyd's Pizza House" style={{ height: 58, width: 'auto', maxWidth: 190, objectFit: 'contain', display: 'block' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <svg width="30" height="30" viewBox="0 0 28 28" fill="none">
+                <circle cx="4"  cy="4"  r="3.5" fill="#D4E8D8"/>
+                <circle cx="14" cy="4"  r="3.5" fill="#D4E8D8"/>
+                <circle cx="24" cy="4"  r="3.5" fill="#2A6E3A"/>
+                <circle cx="4"  cy="14" r="3.5" fill="#D4E8D8"/>
+                <circle cx="14" cy="14" r="3.5" fill="#2A6E3A"/>
+                <circle cx="24" cy="14" r="3.5" fill="#D4E8D8"/>
+                <circle cx="4"  cy="24" r="3.5" fill="#2A6E3A"/>
+                <circle cx="14" cy="24" r="3.5" fill="#D4E8D8"/>
+                <circle cx="24" cy="24" r="3.5" fill="#D4E8D8"/>
+              </svg>
+              <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text-primary)', lineHeight: 1 }}>JBD</span>
             </div>
-            <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-ultra-muted)', marginTop: 9, textAlign: 'center' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-ultra-muted)', textAlign: 'center' }}>
               Smart Menu System
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -192,7 +214,7 @@ export default function Layout() {
         ))}
       </nav>
 
-      {/* Profile card — click to go to profile settings */}
+      {/* Profile card — click to go to profile page */}
       <div style={{ borderTop: '1px solid var(--divider)', padding: '10px 8px 14px', flexShrink: 0 }}>
         <Link
           to="/profile"
@@ -347,7 +369,7 @@ export default function Layout() {
             )}
 
             {!isMobile && (
-              <div style={{ minWidth: 0 }}>
+              <div key={location.pathname} className="topbar-title-enter" style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-ultra-muted)', textTransform: 'uppercase', lineHeight: 1, marginBottom: 3 }}>
                   {pageMeta.kicker}
                 </div>
@@ -424,7 +446,7 @@ export default function Layout() {
       {/* Mobile bottom nav */}
       {isMobile && (
         <nav className="mobile-bottom-nav">
-          {NAV_ITEMS.slice(0, 5).map(({ to, label, icon: Icon }) => (
+          {NAV_ITEMS.slice(0, 6).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -438,6 +460,7 @@ export default function Layout() {
         </nav>
       )}
     </div>
+    <FloatingCalculator />
     </ToastProvider>
   );
 }

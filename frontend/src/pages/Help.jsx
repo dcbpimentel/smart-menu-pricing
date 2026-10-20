@@ -319,15 +319,10 @@ export default function Help() {
   return (
     <div style={{ maxWidth: 860 }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
-          Help &amp; Guide
-        </h2>
-        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: 0 }}>
-          Select a topic to get started.
-        </p>
-      </div>
+      {/* Subtitle — page title is already shown in the topbar */}
+      <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: '0 0 20px' }}>
+        Select a topic to get started.
+      </p>
 
       {/* Tab bar */}
       <div style={{

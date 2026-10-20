@@ -364,6 +364,7 @@ export default function Extraction() {
 
   // Save
   const [saving, setSaving] = useState(false);
+  const [savedCount, setSavedCount] = useState(null);
 
   const resetResults = () => { setEntries(null); setExtractMsg(''); setError(''); };
 
@@ -417,6 +418,7 @@ export default function Extraction() {
     try {
       const res = await api.post('/extraction/save', { entries });
       const { saved, skipped } = res.data.data;
+      setSavedCount(saved);
       toast.success(`${saved} ${saved === 1 ? 'price' : 'prices'} saved to database${skipped > 0 ? `, ${skipped} skipped` : ''}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Save failed.');
@@ -660,6 +662,22 @@ export default function Extraction() {
               )}
             </div>
 
+            {savedCount !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 10, background: 'oklch(0.955 0.058 145)', border: '1px solid oklch(0.88 0.08 145)' }}>
+                <svg width="14" height="14" fill="none" stroke="oklch(0.44 0.12 145)" strokeWidth="2.5" viewBox="0 0 16 16">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2 8l5 5 7-7"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'oklch(0.38 0.1 145)' }}>
+                  {savedCount} {savedCount === 1 ? 'price' : 'prices'} saved
+                </span>
+                <button
+                  onClick={() => { setSavedCount(null); resetResults(); }}
+                  style={{ marginLeft: 6, fontSize: 12.5, fontWeight: 600, color: 'oklch(0.44 0.12 145)', background: 'none', border: '1px solid oklch(0.78 0.1 145)', borderRadius: 8, padding: '3px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Extract Another
+                </button>
+              </div>
+            )}
             <PrimaryBtn onClick={handleSave} disabled={saving || saveable === 0}>
               {saving ? (
                 <>
@@ -775,12 +793,13 @@ export default function Extraction() {
                     return (
                       <tr
                         key={i}
+                        className="row-interactive"
                         style={{
                           borderTop: i === 0 ? 'none' : '1px solid #F3EDE4',
                           background: isDataFlagged ? 'oklch(0.995 0.01 85)' : 'transparent',
                           opacity: isNoMatch ? 0.6 : 1,
                           borderLeft: (isDataFlagged || status === 'partial') ? '3px solid oklch(0.75 0.1 85)' : '3px solid transparent',
-                          transition: 'background 0.1s',
+                          transition: 'background 0.1s, transform 0.1s ease',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = '#FDFBF8'}
                         onMouseLeave={e => e.currentTarget.style.background = isDataFlagged ? 'oklch(0.995 0.01 85)' : 'transparent'}

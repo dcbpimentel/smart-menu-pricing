@@ -52,9 +52,14 @@ function ToastItem({ id, message, type, onDismiss }) {
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
+  const [exiting, setExiting] = useState(new Set());
 
   const dismiss = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setExiting(prev => new Set([...prev, id]));
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+      setExiting(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }, 200);
   }, []);
 
   const add = useCallback((message, type, duration = 4000) => {
@@ -76,10 +81,10 @@ export function ToastProvider({ children }) {
       <div style={{
         position: 'fixed', top: '16px', right: '16px',
         display: 'flex', flexDirection: 'column', gap: '8px',
-        zIndex: 9999, pointerEvents: 'none',
+        zIndex: 99999, pointerEvents: 'none',
       }}>
         {toasts.map(t => (
-          <div key={t.id} style={{ pointerEvents: 'auto' }}>
+          <div key={t.id} className={exiting.has(t.id) ? 'toast-exit' : 'toast-enter'} style={{ pointerEvents: 'auto' }}>
             <ToastItem {...t} onDismiss={dismiss} />
           </div>
         ))}

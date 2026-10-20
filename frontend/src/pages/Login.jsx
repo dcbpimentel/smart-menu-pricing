@@ -45,8 +45,22 @@ export default function Login() {
           animation: 'loginSuccessIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
         }}>
           <div style={{ animation: 'loginSuccessLogo 0.5s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both' }}>
-            <div style={{ background: '#FFFFFF', borderRadius: 20, padding: '14px 28px', boxShadow: '0 8px 40px rgba(42,110,58,0.14)' }}>
-              <img src="/logo.png" alt="Boyd's Pizza House" style={{ height: 72, width: 'auto', objectFit: 'contain', display: 'block' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <svg width="44" height="44" viewBox="0 0 28 28" fill="none">
+                  <circle cx="4"  cy="4"  r="3.5" fill="#D4E8D8"/>
+                  <circle cx="14" cy="4"  r="3.5" fill="#D4E8D8"/>
+                  <circle cx="24" cy="4"  r="3.5" fill="#2A6E3A"/>
+                  <circle cx="4"  cy="14" r="3.5" fill="#D4E8D8"/>
+                  <circle cx="14" cy="14" r="3.5" fill="#2A6E3A"/>
+                  <circle cx="24" cy="14" r="3.5" fill="#D4E8D8"/>
+                  <circle cx="4"  cy="24" r="3.5" fill="#2A6E3A"/>
+                  <circle cx="14" cy="24" r="3.5" fill="#D4E8D8"/>
+                  <circle cx="24" cy="24" r="3.5" fill="#D4E8D8"/>
+                </svg>
+                <span style={{ fontSize: 40, fontWeight: 900, letterSpacing: '-0.04em', color: '#1A1C18', lineHeight: 1 }}>JBD</span>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8C7C6C' }}>Smart Menu System</div>
             </div>
           </div>
           <div style={{ animation: 'loginFormItemIn 0.5s 0.22s cubic-bezier(0.22, 1, 0.36, 1) both', fontSize: 13.5, fontWeight: 600, color: '#8C7C6C', letterSpacing: '0.01em' }}>
@@ -69,21 +83,20 @@ export default function Login() {
 
         {/* Logo + headline */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Logo card */}
-          <div style={{
-            background: '#FFFFFF',
-            borderRadius: 18,
-            padding: '12px 24px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            marginBottom: 36,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
-          }}>
-            <img
-              src="/logo.png"
-              alt="Boyd's Pizza House"
-              style={{ height: 68, width: 'auto', maxWidth: 240, objectFit: 'contain', display: 'block' }}
-            />
+          {/* Brand mark — JBD Menu Grid */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
+            <svg width="42" height="42" viewBox="0 0 28 28" fill="none">
+              <circle cx="4"  cy="4"  r="3.5" fill="rgba(255,255,255,0.18)"/>
+              <circle cx="14" cy="4"  r="3.5" fill="rgba(255,255,255,0.18)"/>
+              <circle cx="24" cy="4"  r="3.5" fill="#FFFFFF"/>
+              <circle cx="4"  cy="14" r="3.5" fill="rgba(255,255,255,0.18)"/>
+              <circle cx="14" cy="14" r="3.5" fill="#FFFFFF"/>
+              <circle cx="24" cy="14" r="3.5" fill="rgba(255,255,255,0.18)"/>
+              <circle cx="4"  cy="24" r="3.5" fill="#FFFFFF"/>
+              <circle cx="14" cy="24" r="3.5" fill="rgba(255,255,255,0.18)"/>
+              <circle cx="24" cy="24" r="3.5" fill="rgba(255,255,255,0.18)"/>
+            </svg>
+            <span style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.04em', color: '#FFFFFF', lineHeight: 1 }}>JBD</span>
           </div>
 
           <h1 style={{
@@ -130,17 +143,21 @@ export default function Login() {
       }}>
         <div style={{ width: '100%', maxWidth: 368 }}>
 
-          {/* Mobile-only logo */}
+          {/* Mobile-only brand mark */}
           <div className="login-mobile-logo" style={{ display: 'none', marginBottom: 36 }}>
-            <div style={{
-              background: '#FFFFFF',
-              borderRadius: 14,
-              padding: '8px 16px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
-            }}>
-              <img src="/logo.png" alt="Boyd's Pizza House" style={{ height: 36, width: 'auto', objectFit: 'contain', display: 'block' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <svg width="34" height="34" viewBox="0 0 28 28" fill="none">
+                <circle cx="4"  cy="4"  r="3.5" fill="#D4E8D8"/>
+                <circle cx="14" cy="4"  r="3.5" fill="#D4E8D8"/>
+                <circle cx="24" cy="4"  r="3.5" fill="#2A6E3A"/>
+                <circle cx="4"  cy="14" r="3.5" fill="#D4E8D8"/>
+                <circle cx="14" cy="14" r="3.5" fill="#2A6E3A"/>
+                <circle cx="24" cy="14" r="3.5" fill="#D4E8D8"/>
+                <circle cx="4"  cy="24" r="3.5" fill="#2A6E3A"/>
+                <circle cx="14" cy="24" r="3.5" fill="#D4E8D8"/>
+                <circle cx="24" cy="24" r="3.5" fill="#D4E8D8"/>
+              </svg>
+              <span style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.04em', color: '#1A1C18', lineHeight: 1 }}>JBD</span>
             </div>
           </div>
 

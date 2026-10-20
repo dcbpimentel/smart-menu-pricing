@@ -2,32 +2,32 @@
 
 /* ── Design Tokens ───────────────────────────────────────────────────────── */
 :root {
-  --canvas-bg:           #FDF8F2;
+  --canvas-bg:           #EDE8E1;
   --card-bg:             #FFFFFF;
-  --card-bg-alt:         #FDFAF6;
-  --border:              #ECE4D4;
-  --border-strong:       #D8CCB8;
-  --divider:             #F2E9DC;
+  --card-bg-alt:         #FAFAF8;
+  --border:              rgba(0,0,0,0.08);
+  --border-strong:       rgba(0,0,0,0.14);
+  --divider:             rgba(0,0,0,0.055);
   --accent:              #2A6E3A;
-  --accent-light:        oklch(0.957 0.036 148);
-  --accent-focus:        oklch(0.942 0.044 148);
-  --text-primary:        #1A1512;
-  --text-secondary:      #6B5E50;
-  --text-muted:          #8C7C6C;
-  --text-ultra-muted:    #A8988A;
-  --sidebar-bg:          #FFFFFF;
-  --sidebar-border:      #ECE4D4;
-  --sidebar-text:        #1A1512;
-  --sidebar-text-muted:  #9A8C7E;
-  --sidebar-active-bg:   oklch(0.955 0.026 148);
-  --sidebar-active-text: #2A6E3A;
-  --sidebar-hover-bg:    oklch(0.97 0.015 148);
-  --topbar-bg:           rgba(253,248,242,0.90);
-  --input-bg:            #FDF9F5;
-  --input-border:        #E4D8C4;
-  --table-header-bg:     #FDFAF6;
-  --row-hover:           #FDF9F5;
-  --scrollbar-thumb:     #D4C8B0;
+  --accent-light:        rgba(42,110,58,0.08);
+  --accent-focus:        rgba(42,110,58,0.13);
+  --text-primary:        #1C1C1E;
+  --text-secondary:      #48484A;
+  --text-muted:          #8E8E93;
+  --text-ultra-muted:    #AEAEB2;
+  --sidebar-bg:          rgba(252,249,245,0.88);
+  --sidebar-border:      rgba(0,0,0,0.08);
+  --sidebar-text:        #1C1C1E;
+  --sidebar-text-muted:  #8E8E93;
+  --sidebar-active-bg:   rgba(42,110,58,0.09);
+  --sidebar-active-text: #1C5C2E;
+  --sidebar-hover-bg:    rgba(0,0,0,0.04);
+  --topbar-bg:           rgba(237,232,225,0.85);
+  --input-bg:            rgba(0,0,0,0.028);
+  --input-border:        rgba(0,0,0,0.11);
+  --table-header-bg:     #FAFAF8;
+  --row-hover:           rgba(0,0,0,0.025);
+  --scrollbar-thumb:     rgba(0,0,0,0.15);
 }
 
 html, body {
@@ -69,8 +69,8 @@ html, body {
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(11px);
-    filter: blur(4px);
+    transform: translateY(8px);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
@@ -79,8 +79,17 @@ html, body {
   }
 }
 .page-enter {
-  animation: pageEnter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform, filter;
+  animation: pageEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+/* ── Topbar title cross-fade on route change ─────────────────────────────── */
+@keyframes topbarTitleIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.topbar-title-enter {
+  animation: topbarTitleIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* ── Login animations ────────────────────────────────────────────────────── */
@@ -136,6 +145,10 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; marg
 input[type="number"] { -moz-appearance: textfield; }
 
 /* ── Page fade-in ────────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -193,6 +206,13 @@ main {
   background-color: var(--sidebar-active-bg);
   color: var(--sidebar-active-text);
   font-weight: 600;
+}
+.snav-item--active .snav-icon {
+  animation: iconPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes iconPop {
+  from { transform: scale(0.82); opacity: 0.7; }
+  to   { transform: scale(1);    opacity: 1; }
 }
 .snav-icon {
   display: flex;
@@ -399,13 +419,40 @@ button:disabled {
   animation: shimmer 1.6s infinite linear;
 }
 
-/* ── Toast slide-in ──────────────────────────────────────────────────────── */
+/* ── Toast slide-in / slide-out ──────────────────────────────────────────── */
 @keyframes toastIn {
-  from { opacity: 0; transform: translateX(16px) scale(0.96); }
+  from { opacity: 0; transform: translateX(20px) scale(0.94); }
   to   { opacity: 1; transform: translateX(0)    scale(1); }
 }
-.toast-item {
-  animation: toastIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0)   scale(1); }
+  to   { opacity: 0; transform: translateX(20px) scale(0.94); }
+}
+.toast-enter {
+  animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.toast-exit {
+  animation: toastOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+
+/* ── Dropdown / Select open & close ─────────────────────────────────────── */
+@keyframes dropOpen {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes dropClose {
+  from { opacity: 1; transform: translateY(0)   scale(1); }
+  to   { opacity: 0; transform: translateY(-4px) scale(0.97); }
+}
+.drop-open {
+  animation: dropOpen 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: top center;
+}
+.drop-close {
+  animation: dropClose 0.13s cubic-bezier(0.4, 0, 0.6, 1) both;
+  transform-origin: top center;
+  pointer-events: none;
 }
 
 /* ── Command palette ─────────────────────────────────────────────────────── */
@@ -499,13 +546,34 @@ button:disabled {
   border: 1px solid var(--border);
 }
 
-/* ── Modal ───────────────────────────────────────────────────────────────── */
+/* ── Modal open & close ──────────────────────────────────────────────────── */
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
   to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
+@keyframes modalOut {
+  from { opacity: 1; transform: scale(1)    translateY(0); }
+  to   { opacity: 0; transform: scale(0.95) translateY(6px); }
+}
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes backdropOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
 .modal-content {
-  animation: modalIn 0.2s cubic-bezier(0.22,1,0.36,1) forwards;
+  animation: modalIn 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.modal-content-exit {
+  animation: modalOut 0.18s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+.modal-backdrop {
+  animation: backdropIn 0.2s ease both;
+}
+.modal-backdrop-exit {
+  animation: backdropOut 0.18s ease both;
 }
 
 /* ── Link transitions ────────────────────────────────────────────────────── */
@@ -521,6 +589,49 @@ input, textarea, select {
 /* ── Table rows ──────────────────────────────────────────────────────────── */
 tbody tr {
   transition: background-color 0.12s ease;
+}
+
+/* ── Staggered list entrance ─────────────────────────────────────────────── */
+@keyframes staggerFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item {
+  animation: staggerFadeUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 40ms), 320ms);
+}
+
+/* ── Card spring entrance (for grids) ────────────────────────────────────── */
+@keyframes cardSpringIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.card-spring {
+  animation: cardSpringIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: min(calc(var(--i, 0) * 60ms), 360ms);
+}
+
+/* ── Form input error shake ──────────────────────────────────────────────── */
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  18%       { transform: translateX(-5px); }
+  36%       { transform: translateX(5px); }
+  54%       { transform: translateX(-4px); }
+  72%       { transform: translateX(4px); }
+}
+.input-error {
+  animation: inputShake 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border-color: #EF4444 !important;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.14) !important;
+}
+
+/* ── Interactive table row ───────────────────────────────────────────────── */
+.row-interactive {
+  transition: background-color 0.12s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+.row-interactive:active {
+  transform: scale(0.995);
 }
 
 /* ── Cost bar animation ──────────────────────────────────────────────────── */

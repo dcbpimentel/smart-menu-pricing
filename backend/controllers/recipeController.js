@@ -25,7 +25,7 @@ const getRecipeById = async (req, res) => {
       [req.params.id]
     );
 
-    const { id, name, description, servings, category } = recipes[0];
+    const { id, name, description, servings, category, image_data } = recipes[0];
     res.json({
       success: true,
       data: {
@@ -34,6 +34,7 @@ const getRecipeById = async (req, res) => {
         description,
         servings,
         category: category ?? null,
+        image_data: image_data ?? null,
         ingredients: ingredients.map((r) => ({
           id: r.id,
           ingredient_id: r.ingredient_id,
@@ -52,14 +53,14 @@ const getRecipeById = async (req, res) => {
 
 const createRecipe = async (req, res) => {
   try {
-    const { name, description, servings, category } = req.body;
+    const { name, description, servings, category, image_data } = req.body;
     if (!name || description === undefined || !servings) {
       return res.status(400).json({ success: false, data: null, message: 'name, description, and servings are required' });
     }
 
     const [result] = await db.query(
-      'INSERT INTO recipes (name, description, servings, category) VALUES (?, ?, ?, ?)',
-      [name, description, servings, category ?? null]
+      'INSERT INTO recipes (name, description, servings, category, image_data) VALUES (?, ?, ?, ?, ?)',
+      [name, description, servings, category ?? null, image_data ?? null]
     );
     const [rows] = await db.query('SELECT * FROM recipes WHERE id = ?', [result.insertId]);
     res.status(201).json({ success: true, data: rows[0], message: '' });
@@ -73,15 +74,19 @@ const createRecipe = async (req, res) => {
 
 const updateRecipe = async (req, res) => {
   try {
-    const { name, description, servings, category } = req.body;
+    const { name, description, servings, category, image_data } = req.body;
+    const hasImage = Object.prototype.hasOwnProperty.call(req.body, 'image_data');
     const [result] = await db.query(
       `UPDATE recipes
        SET name        = COALESCE(?, name),
            description = COALESCE(?, description),
            servings    = COALESCE(?, servings),
            category    = COALESCE(?, category)
+           ${hasImage ? ', image_data = ?' : ''}
        WHERE id = ?`,
-      [name ?? null, description ?? null, servings ?? null, category ?? null, req.params.id]
+      hasImage
+        ? [name ?? null, description ?? null, servings ?? null, category ?? null, image_data ?? null, req.params.id]
+        : [name ?? null, description ?? null, servings ?? null, category ?? null, req.params.id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, data: null, message: 'Not found' });

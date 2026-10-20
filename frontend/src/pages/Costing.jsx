@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FiDollarSign } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
@@ -40,9 +40,10 @@ const SOURCE_BADGE = {
 
 /* ─── Sub-components ─────────────────────────────────────────────────────── */
 
-function StatCard({ label, value, sub, accent }) {
+function StatCard({ label, value, sub, accent, index = 0 }) {
   return (
-    <div style={{
+    <div className="card-spring" style={{
+      '--i': index,
       background: '#FFFFFF',
       border: '1px solid #EFE8DE',
       borderRadius: 18,
@@ -105,13 +106,19 @@ export default function Costing() {
   const [history, setHistory]             = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyError, setHistoryError]   = useState('');
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const HISTORY_PREVIEW = 5;
 
   const [batchRunning, setBatchRunning]   = useState(false);
   const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 });
   const [batchResults, setBatchResults]   = useState(null);
+  const [activeBatchRow, setActiveBatchRow] = useState(null);
+
+  const resultRef = useRef(null);
 
   const [actualPrice, setActualPrice]     = useState('');
   const [savingActual, setSavingActual]   = useState(false);
+  const [savedMenuPrice, setSavedMenuPrice] = useState(null);
 
   const fetchMeta = useCallback(async () => {
     setLoadingMeta(true);
@@ -139,7 +146,11 @@ export default function Costing() {
     setHistoryError('');
     try {
       const res = await api.get(`/costing/history/${rId}`);
-      setHistory(res.data.data || []);
+      const rows = res.data.data || [];
+      setHistory(rows);
+      // Track the most recently saved menu price for this recipe
+      const withPrice = rows.find(r => r.actual_selling_price != null);
+      setSavedMenuPrice(withPrice ? withPrice.actual_selling_price : null);
     } catch {
       setHistory([]);
       setHistoryError('Failed to load costing history.');
@@ -149,17 +160,19 @@ export default function Costing() {
   }, []);
 
   useEffect(() => {
-    if (recipeId) fetchHistory(recipeId);
+    if (recipeId) { fetchHistory(recipeId); setHistoryExpanded(false); }
   }, [recipeId, fetchHistory]);
 
   const handleSaveActualPrice = async () => {
     if (!result?.output_id || !actualPrice || parseFloat(actualPrice) <= 0) return;
     setSavingActual(true);
     try {
+      const price = parseFloat(actualPrice);
       await api.patch(`/costing/${result.output_id}/actual-price`, {
-        actual_selling_price: parseFloat(actualPrice),
+        actual_selling_price: price,
       });
-      toast.success('Actual price saved');
+      setSavedMenuPrice(price);
+      toast.success('Menu price saved');
       fetchHistory(recipeId);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save actual price');
@@ -174,7 +187,8 @@ export default function Costing() {
     setComputeError('');
     setResult(null);
     setSaved(false);
-    setActualPrice('');
+    setActiveBatchRow(null);
+    setActualPrice(savedMenuPrice ? String(savedMenuPrice) : '');
     try {
       const res = await api.post('/costing/compute', {
         recipe_id:          parseInt(recipeId, 10),
@@ -184,7 +198,11 @@ export default function Costing() {
       setResult(res.data.data);
       setSaved(true);
       fetchHistory(recipeId);
-      toast.success('Cost computed successfully');
+      if (res.data.data.is_duplicate) {
+        toast.info('No changes detected — cost is already up to date');
+      } else {
+        toast.success('Cost computed and saved successfully');
+      }
     } catch (err) {
       const msg = err.response?.data?.message || 'Computation failed.';
       setComputeError(msg);
@@ -199,8 +217,12 @@ export default function Costing() {
     setBatchRunning(true);
     setBatchProgress({ done: 0, total: recipes.length });
     setBatchResults(null);
+    setActiveBatchRow(null);
+    setResult(null);
     const results = [];
     const errors = [];
+    let newCount = 0;
+    let dupCount = 0;
     for (const recipe of recipes) {
       try {
         const res = await api.post('/costing/compute', {
@@ -208,21 +230,33 @@ export default function Costing() {
           pricing_setting_id: parseInt(settingId, 10),
           price_source:       priceSource,
         });
-        results.push({ recipe_name: recipe.name, ...res.data.data });
+        const data = res.data.data;
+        results.push({ recipe_id: recipe.id, recipe_name: recipe.name, ...data });
+        if (data.is_duplicate) dupCount++; else newCount++;
       } catch (err) {
-        errors.push({ recipe_name: recipe.name, error: err.response?.data?.message || 'Computation failed' });
+        errors.push({ recipe_id: recipe.id, recipe_name: recipe.name, error: err.response?.data?.message || 'Computation failed' });
       }
       setBatchProgress(prev => ({ ...prev, done: prev.done + 1 }));
     }
     setBatchResults({ results, errors });
     setBatchRunning(false);
-    toast.success(`${results.length} recipe${results.length !== 1 ? 's' : ''} computed`);
+    if (newCount > 0 && dupCount > 0) {
+      toast.success(`${newCount} new cost${newCount !== 1 ? 's' : ''} saved; ${dupCount} already up to date`);
+    } else if (newCount > 0) {
+      toast.success(`${newCount} recipe cost${newCount !== 1 ? 's' : ''} saved successfully`);
+    } else {
+      toast.info('All costs already up to date — no changes detected');
+    }
     if (recipeId) fetchHistory(recipeId);
   };
 
   const handlePrint = () => {
     if (!result) return;
     const w = window.open('', '_blank', 'width=820,height=700');
+    if (!w) {
+      toast.error('Popup was blocked. Please allow popups for this site to print.');
+      return;
+    }
     const rows = (result.ingredient_breakdown ?? []).map(row => `
       <tr>
         <td>${row.name}</td>
@@ -266,6 +300,103 @@ export default function Costing() {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+
+  const fmtSource = (s) => {
+    if (!s) return '—';
+    const [src, date] = s.split(':');
+    const label = { dti: 'DTI', da: 'DA', manual: 'Manual', latest: 'Latest' }[src] ?? src.toUpperCase();
+    if (!date) return label;
+    const [y, m, d] = date.split('-').map(Number);
+    const dateStr = new Date(y, m - 1, d).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' });
+    return `${label} · ${dateStr}`;
+  };
+
+  const downloadCSV = (filename, headers, rows) => {
+    const escape = (v) => {
+      const s = v == null ? '' : String(v);
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+    const lines = [
+      headers.map(escape).join(','),
+      ...rows.map(r => r.map(escape).join(',')),
+    ];
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportHistoryCSV = () => {
+    if (!history.length) return;
+    const recipeName = recipes.find(r => String(r.id) === recipeId)?.name ?? 'recipe';
+    downloadCSV(
+      `costing-history-${recipeName.replace(/\s+/g, '-').toLowerCase()}.csv`,
+      ['Date', 'Profile', 'Recipe Cost (₱)', 'Portion Cost (₱)', 'Recommended Price (₱)', 'Price Source'],
+      history.map(row => [
+        fmtDate(row.computed_at),
+        row.pricing_setting_label,
+        row.recipe_cost,
+        row.portion_cost,
+        row.recommended_price,
+        row.applied_price_source,
+      ])
+    );
+  };
+
+  const handleBatchRowClick = (row) => {
+    setActiveBatchRow(row.recipe_id);
+    setRecipeId(String(row.recipe_id));
+    setResult(row);
+    setSaved(true);
+    setActualPrice(savedMenuPrice ? String(savedMenuPrice) : '');
+    fetchHistory(row.recipe_id);
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+
+  const exportBatchCSV = () => {
+    if (!batchResults?.results?.length) return;
+    downloadCSV(
+      `batch-costing-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Recipe', 'Recipe Cost (₱)', 'Portion Cost (₱)', 'Recommended Price (₱)', 'Status'],
+      [
+        ...batchResults.results.map(row => [
+          row.recipe_name,
+          row.recipe_cost,
+          row.portion_cost,
+          row.recommended_price,
+          'Computed',
+        ]),
+        ...batchResults.errors.map(row => [
+          row.recipe_name,
+          '', '', '',
+          `Failed: ${row.error}`,
+        ]),
+      ]
+    );
+  };
+
+  const exportResultCSV = () => {
+    if (!result) return;
+    downloadCSV(
+      `cost-breakdown-${result.recipe_name.replace(/\s+/g, '-').toLowerCase()}.csv`,
+      ['Ingredient', 'Quantity', 'Unit', 'Waste %', 'Eff. Quantity', 'Unit Price (₱)', 'Cost (₱)', 'Source'],
+      (result.ingredient_breakdown ?? []).map(row => [
+        row.name,
+        row.quantity,
+        row.unit,
+        row.waste_pct ?? 0,
+        row.effective_quantity ?? row.quantity,
+        row.missing_price ? '' : row.unit_price,
+        row.missing_price ? '' : row.ingredient_cost,
+        row.missing_price ? 'no price' : (row.price_source ?? ''),
+      ])
+    );
+  };
 
   if (loadingMeta) return (
     <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, padding: 24 }}>
@@ -326,7 +457,7 @@ export default function Costing() {
           }}>
             Cost Computation
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               type="button"
               onClick={handleBatchCompute}
@@ -356,9 +487,6 @@ export default function Costing() {
                 </>
               )}
             </button>
-            <Link to="/reports" style={{ fontSize: 11.5, color: T.textMuted, textDecoration: 'none' }}>
-              For CSV export &amp; report view →
-            </Link>
           </div>
         </div>
 
@@ -368,10 +496,11 @@ export default function Costing() {
               <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Recipe *</label>
               <Select
                 value={recipeId}
-                onChange={v => { setRecipeId(v); setResult(null); setSaved(false); }}
+                onChange={v => { setRecipeId(v); setResult(null); setSaved(false); setActiveBatchRow(null); }}
                 options={recipeOpts.length ? recipeOpts : [{ value: '', label: 'No recipes' }]}
                 placeholder="Select recipe…"
                 disabled={!recipeOpts.length}
+                searchable
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -456,28 +585,6 @@ export default function Costing() {
               </span>
             )}
 
-            {result && !computing && (
-              <button
-                type="button"
-                onClick={handlePrint}
-                style={{
-                  height: 36, padding: '0 15px', borderRadius: 11,
-                  border: '1px solid var(--input-border, #E7DFD4)',
-                  background: 'var(--card-bg, #FDFBF8)', fontSize: 13, fontWeight: 600,
-                  color: T.textSecond, cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#F3EDE4'}
-                onMouseLeave={e => e.currentTarget.style.background = 'var(--card-bg, #FDFBF8)'}
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <rect x="3" y="5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-                  <path d="M5 5V3h6v2M5 12v1h6v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  <circle cx="12" cy="8" r="0.7" fill="currentColor"/>
-                </svg>
-                Print Cost Sheet
-              </button>
-            )}
 
             {computeError && (
               <p style={{ fontSize: 13, color: 'oklch(0.58 0.16 28)', margin: 0 }}>{computeError}</p>
@@ -489,13 +596,35 @@ export default function Costing() {
       {/* ── Batch results ── */}
       {batchResults && !batchRunning && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, overflow: 'hidden', animation: 'riseIn 420ms cubic-bezier(0.22,1,0.36,1) both' }}>
-          <div style={{ padding: '14px 22px', borderBottom: '1px solid #F3EDE4', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>
-              Batch Results
-            </h4>
-            <span style={{ fontSize: 12, color: T.textMuted }}>
-              {batchResults.results.length} computed{batchResults.errors.length > 0 ? `, ${batchResults.errors.length} failed` : ''}
-            </span>
+          <div style={{ padding: '14px 22px', borderBottom: '1px solid #F3EDE4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <div>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 1px' }}>
+                Batch Results
+              </h4>
+              <span style={{ fontSize: 12, color: T.textMuted }}>
+                {batchResults.results.length} computed{batchResults.errors.length > 0 ? `, ${batchResults.errors.length} failed` : ''} · <span style={{ color: T.accent }}>click a row to view breakdown</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={exportBatchCSV}
+              style={{
+                height: 34, padding: '0 14px', borderRadius: 10,
+                border: 'none', background: T.accent,
+                fontSize: 12.5, fontWeight: 700, color: '#FFFFFF',
+                cursor: 'pointer', fontFamily: 'inherit',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 2px 8px rgba(70,86,56,0.22)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#3a4a2e'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(70,86,56,0.32)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.boxShadow = '0 2px 8px rgba(70,86,56,0.22)'; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v7m0 0l-3-3m3 3l3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 12h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+              Export CSV
+            </button>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
@@ -509,19 +638,35 @@ export default function Costing() {
                 </tr>
               </thead>
               <tbody>
-                {batchResults.results.map((row, i) => (
-                  <tr key={i} style={{ borderTop: i === 0 ? 'none' : '1px solid #F3EDE4', transition: 'background 0.1s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ padding: '11px 12px 11px 22px', fontWeight: 600, color: T.textPrimary }}>{row.recipe_name}</td>
-                    <td style={{ padding: '11px 12px', textAlign: 'right', color: T.textSecond, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(row.portion_cost)}</td>
-                    <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, color: T.accent, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(row.recommended_price)}</td>
-                    <td style={{ padding: '11px 22px 11px 12px', textAlign: 'right' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'oklch(0.955 0.058 145)', color: 'oklch(0.44 0.12 145)' }}>Saved</span>
-                    </td>
-                  </tr>
-                ))}
+                {batchResults.results.map((row, i) => {
+                  const isActive = activeBatchRow === row.recipe_id;
+                  return (
+                    <tr
+                      key={i}
+                      className="row-interactive"
+                      onClick={() => handleBatchRowClick(row)}
+                      style={{
+                        borderTop: i === 0 ? 'none' : '1px solid #F3EDE4',
+                        background: isActive ? T.accentLight : 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background 0.1s, transform 0.1s ease',
+                        borderLeft: isActive ? `3px solid ${T.accent}` : '3px solid transparent',
+                      }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = T.rowHover; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <td style={{ padding: '11px 12px 11px 19px', fontWeight: 600, color: T.textPrimary }}>
+                        {row.recipe_name}
+                        {isActive && <span style={{ marginLeft: 7, fontSize: 10.5, fontWeight: 700, color: T.accent, background: '#FFFFFF', padding: '1px 7px', borderRadius: 10, border: `1px solid ${T.accent}` }}>Viewing</span>}
+                      </td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', color: T.textSecond, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(row.portion_cost)}</td>
+                      <td style={{ padding: '11px 12px', textAlign: 'right', fontWeight: 700, color: T.accent, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(row.recommended_price)}</td>
+                      <td style={{ padding: '11px 22px 11px 12px', textAlign: 'right' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'oklch(0.955 0.058 145)', color: 'oklch(0.44 0.12 145)' }}>Saved</span>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {batchResults.errors.map((row, i) => (
                   <tr key={`e${i}`} style={{ borderTop: '1px solid #F3EDE4', background: 'oklch(0.995 0.01 28)' }}>
                     <td style={{ padding: '11px 12px 11px 22px', fontWeight: 600, color: T.textPrimary }}>{row.recipe_name}</td>
@@ -546,7 +691,7 @@ export default function Costing() {
 
       {/* ── Results ── */}
       {result && !computing && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'riseIn 420ms cubic-bezier(0.22,1,0.36,1) both' }}>
+        <div ref={resultRef} style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'riseIn 420ms cubic-bezier(0.22,1,0.36,1) both' }}>
 
           {/* Hero card — recommended price */}
           <div style={{
@@ -594,19 +739,22 @@ export default function Costing() {
             </div>
           </div>
 
-          {/* 4 stat tiles */}
+          {/* stat tiles */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
             <StatCard
+              index={0}
               label="Recipe Cost"
               value={formatCurrency(result.recipe_cost)}
               sub="Full batch total"
             />
             <StatCard
+              index={1}
               label="Portion Cost"
               value={formatCurrency(result.portion_cost)}
               sub="Per serving"
             />
             <StatCard
+              index={2}
               label="Food Cost %"
               value={
                 result.portion_cost != null && result.recommended_price != null && result.recommended_price > 0
@@ -623,6 +771,7 @@ export default function Costing() {
               }
             />
             <StatCard
+              index={3}
               label="Gross Profit / Serving"
               value={
                 result.recommended_price != null && result.portion_cost != null
@@ -632,88 +781,133 @@ export default function Costing() {
               sub="Recommended price − portion cost"
               accent={T.accent}
             />
+            {/* Your actual menu price — always show so the owner sees the gap */}
+            {(() => {
+              const mp = savedMenuPrice ?? (actualPrice && parseFloat(actualPrice) > 0 ? parseFloat(actualPrice) : null);
+              const gap = mp != null && result.recommended_price != null ? mp - result.recommended_price : null;
+              const isUnder = gap != null && gap < -0.01;
+              const isOver  = gap != null && gap > 0.01;
+              return (
+                <StatCard
+                  label="Your Menu Price"
+                  value={mp != null ? formatCurrency(mp) : 'Not set'}
+                  sub={
+                    gap != null
+                      ? isUnder
+                        ? `↓ ${formatCurrency(Math.abs(gap))} below recommended`
+                        : isOver
+                        ? `↑ ${formatCurrency(gap)} above recommended`
+                        : 'On target with recommended'
+                      : 'Set your actual selling price below'
+                  }
+                  accent={
+                    mp == null ? T.textMuted
+                    : isUnder ? '#D97706'
+                    : isOver  ? '#2563EB'
+                    : T.accent
+                  }
+                />
+              );
+            })()}
           </div>
 
-          {/* Actual selling price */}
-          {result.portion_cost != null && (
+          {/* Menu price — show whenever there's a result OR an already-saved price */}
+          {(result.portion_cost != null || savedMenuPrice) && (
             <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 18, padding: '16px 20px' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 10 }}>
-                Actual Selling Price
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Menu Price
+                </span>
+                {savedMenuPrice && (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.accent, background: 'oklch(0.955 0.021 138)', padding: '2px 10px', borderRadius: 999 }}>
+                    Currently on menu: {formatCurrency(savedMenuPrice)}
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', flex: '1 1 140px', maxWidth: 220 }}>
-                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 600, color: T.textMuted, pointerEvents: 'none' }}>₱</span>
-                  <input
-                    type="number" step="0.01" min="0.01"
-                    placeholder="Your actual price"
-                    value={actualPrice}
-                    onChange={e => setActualPrice(e.target.value)}
-                    style={{ height: 40, paddingLeft: 28, paddingRight: 12, borderRadius: 10, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                    onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
-                    onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
-                  />
-                </div>
-                {actualPrice && parseFloat(actualPrice) > 0 && (
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', fontSize: 13 }}>
-                    {(() => {
-                      const ap = parseFloat(actualPrice);
-                      const actualFcPct = (result.portion_cost / ap * 100);
-                      const targetPct = result.pricing_setting?.target_food_cost_pct ?? 35;
-                      const p = loadPrefs();
-                      const priceGapThreshold = p.priceGapThreshold ?? 15;
-                      const foodCostDeviationThreshold = p.foodCostDeviationThreshold ?? 5;
-                      const gapPct = Math.abs((ap - result.recommended_price) / result.recommended_price * 100);
-                      const fcDeviation = actualFcPct - targetPct;
-                      const needsPriceUpdate = fcDeviation > foodCostDeviationThreshold || gapPct > priceGapThreshold;
-                      return (
-                        <>
-                          <span style={{ color: T.textSecond }}>
-                            Food cost:{' '}
-                            <strong style={{ color: fcDeviation > foodCostDeviationThreshold ? 'oklch(0.55 0.16 28)' : T.accent }}>
-                              {actualFcPct.toFixed(1)}%
-                            </strong>
-                            {' '}<span style={{ color: T.textMuted }}>(target {targetPct}%)</span>
-                          </span>
-                          <span style={{ color: T.textSecond }}>
-                            Price gap:{' '}
-                            <strong style={{ color: gapPct > priceGapThreshold ? 'oklch(0.55 0.16 28)' : T.accent }}>
-                              {gapPct.toFixed(1)}%
-                            </strong>
-                            {' '}<span style={{ color: T.textMuted }}>(max {priceGapThreshold}%)</span>
-                          </span>
-                          <span style={{ color: T.textSecond }}>
-                            Margin: <strong style={{ color: T.accent }}>{formatCurrency(ap - result.portion_cost)}</strong>
-                          </span>
-                          {needsPriceUpdate && (
-                            <span style={{ padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: '#FEF3C7', color: '#92400E' }}>
-                              Consider updating your selling price
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
+              {result.portion_cost != null ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', flex: '1 1 140px', maxWidth: 220 }}>
+                      <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, fontWeight: 600, color: T.textMuted, pointerEvents: 'none' }}>₱</span>
+                      <input
+                        type="number" step="0.01" min="0.01"
+                        placeholder={savedMenuPrice ? String(savedMenuPrice) : 'Set your menu price'}
+                        value={actualPrice}
+                        onChange={e => setActualPrice(e.target.value)}
+                        style={{ height: 40, paddingLeft: 28, paddingRight: 12, borderRadius: 10, border: `1px solid ${T.inputBorder}`, background: T.inputBg, fontSize: 14, color: T.textPrimary, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                        onFocus={e => { e.target.style.borderColor = T.accent; e.target.style.boxShadow = T.focusShadow; e.target.style.background = '#FFFFFF'; }}
+                        onBlur={e => { e.target.style.borderColor = T.inputBorder; e.target.style.boxShadow = 'none'; e.target.style.background = T.inputBg; }}
+                      />
+                    </div>
+                    {actualPrice && parseFloat(actualPrice) > 0 && (
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', fontSize: 13 }}>
+                        {(() => {
+                          const ap = parseFloat(actualPrice);
+                          const actualFcPct = (result.portion_cost / ap * 100);
+                          const targetPct = result.pricing_setting?.target_food_cost_pct ?? 35;
+                          const p = loadPrefs();
+                          const priceGapThreshold = p.priceGapThreshold ?? 15;
+                          const foodCostDeviationThreshold = p.foodCostDeviationThreshold ?? 5;
+                          const gapPct = Math.abs((ap - result.recommended_price) / result.recommended_price * 100);
+                          const fcDeviation = actualFcPct - targetPct;
+                          const needsPriceUpdate = fcDeviation > foodCostDeviationThreshold || gapPct > priceGapThreshold;
+                          return (
+                            <>
+                              <span style={{ color: T.textSecond }}>
+                                Food cost:{' '}
+                                <strong style={{ color: fcDeviation > foodCostDeviationThreshold ? 'oklch(0.55 0.16 28)' : T.accent }}>
+                                  {actualFcPct.toFixed(1)}%
+                                </strong>
+                                {' '}<span style={{ color: T.textMuted }}>(target {targetPct}%)</span>
+                              </span>
+                              <span style={{ color: T.textSecond }}>
+                                Price gap:{' '}
+                                <strong style={{ color: gapPct > priceGapThreshold ? 'oklch(0.55 0.16 28)' : T.accent }}>
+                                  {gapPct.toFixed(1)}%
+                                </strong>
+                                {' '}<span style={{ color: T.textMuted }}>(max {priceGapThreshold}%)</span>
+                              </span>
+                              <span style={{ color: T.textSecond }}>
+                                Margin: <strong style={{ color: T.accent }}>{formatCurrency(ap - result.portion_cost)}</strong>
+                              </span>
+                              {needsPriceUpdate && (
+                                <span style={{ padding: '2px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700, background: '#FEF3C7', color: '#92400E' }}>
+                                  Consider updating your selling price
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    {result.output_id && (
+                      <button
+                        type="button"
+                        disabled={!actualPrice || parseFloat(actualPrice) <= 0 || savingActual}
+                        onClick={handleSaveActualPrice}
+                        style={{
+                          height: 40, padding: '0 16px', borderRadius: 10,
+                          background: (!actualPrice || parseFloat(actualPrice) <= 0) ? T.accentLight : T.accent,
+                          color: (!actualPrice || parseFloat(actualPrice) <= 0) ? T.accent : '#FFFFFF',
+                          fontWeight: 600, fontSize: 13, border: 'none', cursor: (!actualPrice || parseFloat(actualPrice) <= 0) ? 'not-allowed' : 'pointer',
+                          fontFamily: 'inherit', opacity: savingActual ? 0.6 : 1, whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {savingActual ? 'Saving…' : savedMenuPrice ? 'Update Price' : 'Save Price'}
+                      </button>
+                    )}
                   </div>
-                )}
-                {result.output_id && (
-                  <button
-                    type="button"
-                    disabled={!actualPrice || parseFloat(actualPrice) <= 0 || savingActual}
-                    onClick={handleSaveActualPrice}
-                    style={{
-                      height: 40, padding: '0 16px', borderRadius: 10,
-                      background: (!actualPrice || parseFloat(actualPrice) <= 0) ? T.accentLight : T.accent,
-                      color: (!actualPrice || parseFloat(actualPrice) <= 0) ? T.accent : '#FFFFFF',
-                      fontWeight: 600, fontSize: 13, border: 'none', cursor: (!actualPrice || parseFloat(actualPrice) <= 0) ? 'not-allowed' : 'pointer',
-                      fontFamily: 'inherit', opacity: savingActual ? 0.6 : 1, whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {savingActual ? 'Saving…' : 'Save Price'}
-                  </button>
-                )}
-              </div>
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: T.textMuted }}>
-                Enter the price you actually charge to compare against the recommendation above.
-              </p>
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: T.textMuted }}>
+                    {savedMenuPrice
+                      ? 'Update the price you charge on the menu — reflected on the Recipe page too.'
+                      : 'Set the price you charge to compare against the recommendation above.'}
+                  </p>
+                </>
+              ) : (
+                <p style={{ margin: 0, fontSize: 12.5, color: T.textMuted }}>
+                  Compute cost to update the menu price for this recipe.
+                </p>
+              )}
             </div>
           )}
 
@@ -744,14 +938,58 @@ export default function Costing() {
             <div style={{
               padding: '14px 22px',
               borderBottom: '1px solid #F3EDE4',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
             }}>
-              <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>
-                Ingredient Breakdown
-              </h4>
-              <span style={{ fontSize: 12, color: T.textMuted }}>
-                {result.ingredient_breakdown.length} ingredient{result.ingredient_breakdown.length !== 1 ? 's' : ''}
-              </span>
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 1px' }}>
+                  Ingredient Breakdown
+                </h4>
+                <span style={{ fontSize: 12, color: T.textMuted }}>
+                  {result.ingredient_breakdown.length} ingredient{result.ingredient_breakdown.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  style={{
+                    height: 34, padding: '0 13px', borderRadius: 10,
+                    border: '1px solid #E7DFD4', background: '#FDFBF8',
+                    fontSize: 12.5, fontWeight: 600, color: T.textSecond,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#F3EDE4'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#FDFBF8'}
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                    <rect x="3" y="5" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M5 5V3h6v2M5 12v1h6v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <circle cx="12" cy="8" r="0.7" fill="currentColor"/>
+                  </svg>
+                  Print
+                </button>
+                <button
+                  type="button"
+                  onClick={exportResultCSV}
+                  style={{
+                    height: 34, padding: '0 14px', borderRadius: 10,
+                    border: 'none', background: T.accent,
+                    fontSize: 12.5, fontWeight: 700, color: '#FFFFFF',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    boxShadow: '0 2px 8px rgba(70,86,56,0.22)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#3a4a2e'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(70,86,56,0.32)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.boxShadow = '0 2px 8px rgba(70,86,56,0.22)'; }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3v7m0 0l-3-3m3 3l3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3 12h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                  Export CSV
+                </button>
+              </div>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
@@ -786,10 +1024,11 @@ export default function Costing() {
                     return (
                       <tr
                         key={row.ingredient_id}
+                        className="row-interactive"
                         style={{
                           borderTop: i === 0 ? 'none' : '1px solid #F3EDE4',
                           background: row.missing_price ? 'oklch(0.995 0.01 85)' : 'transparent',
-                          transition: 'background 0.1s',
+                          transition: 'background 0.1s, transform 0.1s ease',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
                         onMouseLeave={e => e.currentTarget.style.background = row.missing_price ? 'oklch(0.995 0.01 85)' : 'transparent'}
@@ -808,12 +1047,25 @@ export default function Costing() {
                           )}
                         </td>
                         <td style={{ padding: '13px 12px', color: T.textMuted, fontSize: 13 }}>
-                          {row.unit}
+                          <span>{row.unit}</span>
+                          {row.base_unit && row.base_unit !== row.unit && !row.unit_mismatch && (
+                            <div style={{ fontSize: 10, color: T.textMuted, marginTop: 1, opacity: 0.7 }}>
+                              → {Number(row.converted_quantity % 1 === 0 ? row.converted_quantity : row.converted_quantity?.toFixed(4))} {row.base_unit}
+                            </div>
+                          )}
+                          {row.unit_mismatch && (
+                            <div style={{ fontSize: 10, color: 'oklch(0.55 0.15 50)', marginTop: 1 }}>⚠ unit mismatch</div>
+                          )}
                         </td>
                         <td style={{ padding: '13px 12px', textAlign: 'right', color: T.textSecond, fontVariantNumeric: 'tabular-nums', fontSize: 13.5 }}>
                           {row.missing_price
                             ? <span style={{ fontSize: 12, color: 'oklch(0.50 0.12 85)', fontStyle: 'italic' }}>no price</span>
-                            : formatCurrency(row.unit_price)
+                            : <div>
+                                {formatCurrency(row.unit_price)}
+                                {row.base_unit && (
+                                  <span style={{ fontSize: 10.5, color: T.textMuted, marginLeft: 2 }}>/{row.base_unit}</span>
+                                )}
+                              </div>
                           }
                         </td>
                         <td style={{ padding: '13px 12px', textAlign: 'right' }}>
@@ -852,6 +1104,16 @@ export default function Costing() {
       )}
 
       {/* ── Cost Trend Chart ── */}
+      {history.length > 0 && history.length < 2 && (
+        <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, padding: '20px 22px' }}>
+          <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 8px' }}>
+            Cost Trend
+          </h4>
+          <p style={{ margin: 0, fontSize: 13, color: T.textMuted }}>
+            Run Compute again after prices change to see the cost trend here.
+          </p>
+        </div>
+      )}
       {history.length >= 2 && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, padding: '20px 22px' }}>
           <div style={{ marginBottom: 16 }}>
@@ -894,20 +1156,55 @@ export default function Costing() {
         </div>
       )}
 
+      {/* Persistent menu price badge — visible when no active computation result */}
+      {!result && !computing && savedMenuPrice && (
+        <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 18, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Menu Price</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.accent, background: 'oklch(0.955 0.021 138)', padding: '3px 12px', borderRadius: 999 }}>
+            Currently on menu: {formatCurrency(savedMenuPrice)}
+          </span>
+          <span style={{ fontSize: 12, color: T.textMuted }}>Compute cost to update</span>
+        </div>
+      )}
+
       {/* ── Costing History ── */}
       <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, overflow: 'hidden' }}>
         <div style={{
           padding: '14px 22px',
           borderBottom: '1px solid #F3EDE4',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
         }}>
-          <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>
-            Costing History
-          </h4>
-          {recipeId && (
-            <span style={{ fontSize: 12, color: T.textMuted }}>
-              {recipes.find(r => String(r.id) === recipeId)?.name}
-            </span>
+          <div>
+            <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 1px' }}>
+              Costing History
+            </h4>
+            {recipeId && (
+              <span style={{ fontSize: 12, color: T.textMuted }}>
+                {recipes.find(r => String(r.id) === recipeId)?.name}
+              </span>
+            )}
+          </div>
+          {history.length > 0 && (
+            <button
+              type="button"
+              onClick={exportHistoryCSV}
+              style={{
+                height: 34, padding: '0 14px', borderRadius: 10,
+                border: 'none', background: T.accent,
+                fontSize: 12.5, fontWeight: 700, color: '#FFFFFF',
+                cursor: 'pointer', fontFamily: 'inherit',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                boxShadow: '0 2px 8px rgba(70,86,56,0.22)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#3a4a2e'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(70,86,56,0.32)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = T.accent; e.currentTarget.style.boxShadow = '0 2px 8px rgba(70,86,56,0.22)'; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v7m0 0l-3-3m3 3l3-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 12h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+              Export CSV
+            </button>
           )}
         </div>
 
@@ -935,68 +1232,89 @@ export default function Costing() {
             <div className="empty-state-subtitle">Select a recipe and pricing profile above to compute your first dish cost.</div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
-              <thead>
-                <tr>
-                  {[
-                    { label: 'Date',        align: 'left',  first: true },
-                    { label: 'Profile',     align: 'left' },
-                    { label: 'Recipe Cost', align: 'right' },
-                    { label: 'Portion',     align: 'right' },
-                    { label: 'Rec. Price',  align: 'right' },
-                    { label: 'Source',      align: 'left',  last: true },
-                  ].map((h, i) => (
-                    <th key={i} style={{
-                      background: T.tblHeadBg, color: T.tblHead,
-                      fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
-                      padding: '11px 12px',
-                      paddingLeft:  h.first ? 22 : 12,
-                      paddingRight: h.last  ? 22 : 12,
-                      textAlign: h.align,
-                    }}>
-                      {h.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((row, i) => (
-                  <tr
-                    key={row.id}
-                    style={{ borderTop: i === 0 ? 'none' : '1px solid #F3EDE4', transition: 'background 0.1s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ padding: '12px 12px 12px 22px', color: T.textMuted, fontSize: 12, whiteSpace: 'nowrap' }}>
-                      {fmtDate(row.computed_at)}
-                    </td>
-                    <td style={{ padding: '12px', color: T.textSecond, fontSize: 13.5 }}>
-                      {row.pricing_setting_label}
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'right', color: T.textSecond, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>
-                      {formatCurrency(row.recipe_cost)}
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'right', color: T.textSecond, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>
-                      {formatCurrency(row.portion_cost)}
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: T.accent, fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
-                      {formatCurrency(row.recommended_price)}
-                    </td>
-                    <td style={{ padding: '12px 22px 12px 12px' }}>
-                      <span style={{
-                        fontFamily: 'monospace', fontSize: 11, fontWeight: 700,
-                        background: '#F3EDE4', color: T.textMuted,
-                        padding: '3px 8px', borderRadius: 8,
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 460 }}>
+                <thead>
+                  <tr>
+                    {[
+                      { label: 'Date',       align: 'left',  first: true },
+                      { label: 'Profile',    align: 'left' },
+                      { label: 'Portion',    align: 'right' },
+                      { label: 'Rec. Price', align: 'right' },
+                      { label: 'Source',     align: 'left',  last: true },
+                    ].map((h, i) => (
+                      <th key={i} style={{
+                        background: T.tblHeadBg, color: T.tblHead,
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase',
+                        padding: '11px 12px',
+                        paddingLeft:  h.first ? 22 : 12,
+                        paddingRight: h.last  ? 22 : 12,
+                        textAlign: h.align,
                       }}>
-                        {row.applied_price_source}
-                      </span>
-                    </td>
+                        {h.label}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {(historyExpanded ? history : history.slice(0, HISTORY_PREVIEW)).map((row, i) => (
+                    <tr
+                      key={row.id}
+                      className="row-interactive"
+                      style={{ borderTop: i === 0 ? 'none' : '1px solid #F3EDE4', transition: 'background 0.1s, transform 0.1s ease' }}
+                      onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <td style={{ padding: '12px 12px 12px 22px', color: T.textMuted, fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {fmtDate(row.computed_at)}
+                      </td>
+                      <td style={{ padding: '12px', color: T.textSecond, fontSize: 13.5 }}>
+                        {row.pricing_setting_label}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: T.textSecond, fontSize: 13.5, fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(row.portion_cost)}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: T.accent, fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(row.recommended_price)}
+                      </td>
+                      <td style={{ padding: '12px 22px 12px 12px' }}>
+                        <span style={{
+                          fontSize: 12.5, fontWeight: 500, color: T.textSecond,
+                        }}>
+                          {fmtSource(row.applied_price_source)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {history.length > HISTORY_PREVIEW && (
+              <div style={{ padding: '10px 22px 14px', borderTop: '1px solid #F3EDE4' }}>
+                <button
+                  type="button"
+                  onClick={() => setHistoryExpanded(e => !e)}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    fontSize: 12.5, fontWeight: 600, color: T.accent,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                  }}
+                >
+                  <svg
+                    width="13" height="13" viewBox="0 0 14 14" fill="none"
+                    style={{ transition: 'transform 0.2s', transform: historyExpanded ? 'rotate(180deg)' : 'none' }}
+                  >
+                    <path d="M2 4.5l5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {historyExpanded
+                    ? 'Show less'
+                    : `Show ${history.length - HISTORY_PREVIEW} older record${history.length - HISTORY_PREVIEW !== 1 ? 's' : ''}`}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

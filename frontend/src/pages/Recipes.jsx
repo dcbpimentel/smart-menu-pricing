@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiBook } from 'react-icons/fi';
 import api from '../lib/api';
 import { SkeletonCards } from '../components/Skeleton';
@@ -9,12 +9,13 @@ import { useToast } from '../components/Toast';
 function Modal({ onClose, children }) {
   return createPortal(
     <div
+      className="modal-backdrop"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
         background: 'rgba(10,8,6,0.5)',
-        backdropFilter: 'blur(7px)', WebkitBackdropFilter: 'blur(7px)',
+        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       }}
       onClick={onClose}
     >
@@ -37,7 +38,7 @@ function ModalHeader({ title, subtitle, onClose }) {
         <h3 className="font-semibold text-gray-900">{title}</h3>
         {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
-      <button onClick={onClose} className="text-gray-400 hover:text-gray-600 ml-4 mt-0.5">
+      <button onClick={onClose} className="text-gray-400 hover:text-gray-600" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: 12, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer' }}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
@@ -46,23 +47,30 @@ function ModalHeader({ title, subtitle, onClose }) {
   );
 }
 
-function getStoredImages() {
-  try { return JSON.parse(localStorage.getItem('smp_recipe_images') || '{}'); } catch { return {}; }
-}
-function setStoredImage(recipeId, dataUrl) {
-  const imgs = getStoredImages();
-  if (dataUrl) imgs[String(recipeId)] = dataUrl;
-  else delete imgs[String(recipeId)];
-  localStorage.setItem('smp_recipe_images', JSON.stringify(imgs));
+function computeFlaggedRecipes(enrichedList) {
+  try {
+    const flagged = JSON.parse(localStorage.getItem('smp_price_flagged') || '{}');
+    const dismissed = JSON.parse(localStorage.getItem('smp_price_dismissed') || '{}');
+    const ids = new Set();
+    for (const recipe of enrichedList) {
+      const dismissedAt = dismissed[String(recipe.id)] || 0;
+      const affected = (recipe.ingredientIds || []).some(ingId => {
+        const flaggedAt = flagged[String(ingId)];
+        return flaggedAt && flaggedAt > dismissedAt;
+      });
+      if (affected) ids.add(recipe.id);
+    }
+    return ids;
+  } catch { return new Set(); }
 }
 
 export default function Recipes() {
   const toast = useToast();
+  const navigate = useNavigate();
 
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [recipeImages, setRecipeImages] = useState(getStoredImages);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -71,8 +79,17 @@ export default function Recipes() {
   const [formError, setFormError] = useState('');
   const [catFilter, setCatFilter] = useState('');
 
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const [duplicating, setDuplicating] = useState(null); // recipe id being duplicated
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [flaggedRecipeIds, setFlaggedRecipeIds] = useState(new Set());
+
+  const dismissFlag = (recipeId) => {
+    try {
+      const dismissed = JSON.parse(localStorage.getItem('smp_price_dismissed') || '{}');
+      dismissed[String(recipeId)] = Date.now();
+      localStorage.setItem('smp_price_dismissed', JSON.stringify(dismissed));
+    } catch {}
+    setFlaggedRecipeIds(prev => { const next = new Set(prev); next.delete(recipeId); return next; });
+  };
 
   const fetchRecipes = useCallback(async () => {
     setLoading(true);
@@ -81,13 +98,15 @@ export default function Recipes() {
       const listRes = await api.get('/recipes');
       const list = listRes.data.data || [];
 
-      // Fetch each recipe detail in parallel to get ingredient count
+      // Fetch each recipe detail in parallel to get ingredient count and IDs
       const details = await Promise.all(list.map(r => api.get(`/recipes/${r.id}`)));
       const enriched = list.map((r, i) => ({
         ...r,
         ingredientCount: details[i].data.data?.ingredients?.length ?? 0,
+        ingredientIds: (details[i].data.data?.ingredients || []).map(ing => ing.ingredient_id),
       }));
       setRecipes(enriched);
+      setFlaggedRecipeIds(computeFlaggedRecipes(enriched));
     } catch {
       setError('Failed to load recipes.');
     } finally {
@@ -114,11 +133,9 @@ export default function Recipes() {
     setModalOpen(true);
   };
 
-  const openEdit = (recipe, e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const openEdit = (recipe) => {
     setEditTarget(recipe);
-    setForm({ name: recipe.name, description: recipe.description || '', servings: String(recipe.servings), image: recipeImages[String(recipe.id)] || '', category: recipe.category || '' });
+    setForm({ name: recipe.name, description: recipe.description || '', servings: String(recipe.servings), image: recipe.image_data || '', category: recipe.category || '' });
     setFormError('');
     setModalOpen(true);
   };
@@ -141,18 +158,12 @@ export default function Recipes() {
         description: form.description.trim(),
         servings: parseInt(form.servings, 10),
         category: form.category.trim() || null,
+        image_data: form.image || null,
       };
       if (editTarget) {
         await api.put(`/recipes/${editTarget.id}`, payload);
-        setStoredImage(editTarget.id, form.image || null);
-        setRecipeImages(getStoredImages());
       } else {
-        const res = await api.post('/recipes', payload);
-        const newId = res.data.data?.id;
-        if (newId && form.image) {
-          setStoredImage(newId, form.image);
-          setRecipeImages(getStoredImages());
-        }
+        await api.post('/recipes', payload);
       }
       setModalOpen(false);
       toast.success(editTarget ? 'Recipe updated' : 'Recipe created');
@@ -164,42 +175,7 @@ export default function Recipes() {
     }
   };
 
-  const handleDuplicate = async (recipe, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDuplicating(recipe.id);
-    try {
-      const payload = {
-        name: `${recipe.name} (Copy)`,
-        description: recipe.description || '',
-        servings: recipe.servings,
-      };
-      const res = await api.post('/recipes', payload);
-      const newId = res.data.data?.id;
-      if (newId) {
-        const detailRes = await api.get(`/recipes/${recipe.id}`);
-        const ings = detailRes.data.data?.ingredients ?? [];
-        await Promise.all(ings.map(ing =>
-          api.post(`/recipes/${newId}/ingredients`, {
-            ingredient_id: ing.ingredient_id,
-            quantity: ing.quantity,
-            unit: ing.unit,
-            waste_pct: ing.waste_pct || 0,
-          })
-        ));
-      }
-      toast.success('Recipe duplicated');
-      fetchRecipes();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to duplicate recipe.');
-    } finally {
-      setDuplicating(null);
-    }
-  };
-
-  const handleDelete = async (recipe, e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDelete = async (recipe) => {
     try {
       await api.delete(`/recipes/${recipe.id}`);
       toast.success('Recipe deleted');
@@ -220,7 +196,7 @@ export default function Recipes() {
       {!loading && allCategories.length > 0 && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           {['', ...allCategories].map(cat => (
-            <button key={cat || '__all'} onClick={() => setCatFilter(cat)}
+            <button key={cat || '__all'} onClick={() => setCatFilter(catFilter === cat && cat !== '' ? '' : cat)}
               style={{
                 padding: '6px 14px', borderRadius: 999, border: '1px solid', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 140ms ease',
                 background: catFilter === cat ? 'var(--accent-light)' : 'var(--card-bg)',
@@ -244,14 +220,23 @@ export default function Recipes() {
         <p style={{ color: 'oklch(0.55 0.16 28)', fontSize: 14 }}>{error}</p>
       ) : (
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(285px, 1fr))' }}>
-          {displayedRecipes.map(recipe => (
-            <div key={recipe.id} className="card-hover"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 22, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+          {displayedRecipes.map((recipe, idx) => {
+            const isFlagged = flaggedRecipeIds.has(recipe.id);
+            return (
+            <div key={recipe.id} className="card-hover card-spring"
+              style={{ '--i': idx, background: 'var(--card-bg)', border: isFlagged ? '1.5px solid oklch(0.78 0.16 72)' : '1px solid var(--border)', borderRadius: 22, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'border-color 300ms ease, box-shadow 0.22s ease, transform 0.22s cubic-bezier(0.22,1,0.36,1)', cursor: 'pointer' }}
+              onMouseEnter={() => { if (isFlagged) dismissFlag(recipe.id); }}
+              onClick={() => navigate(`/recipes/${recipe.id}`)}
             >
               {/* Dish photo */}
               <div style={{ height: 120, borderBottom: '1px solid var(--divider)', overflow: 'hidden', position: 'relative', background: 'repeating-linear-gradient(135deg, #F6F1E9 0 10px, #FBF7F1 10px 20px)' }}>
-                {recipeImages[String(recipe.id)] ? (
-                  <img src={recipeImages[String(recipe.id)]} alt={recipe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                {isFlagged && (
+                  <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 1, width: 22, height: 22, borderRadius: 99, background: 'oklch(0.97 0.06 72)', border: '1px solid oklch(0.85 0.10 72)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'oklch(0.52 0.14 60)' }}>
+                    <svg width="11" height="11" viewBox="0 0 10 10" fill="none"><path d="M5 1.5v3.5M5 7.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="5" cy="5" r="4" stroke="currentColor" strokeWidth="1.2"/></svg>
+                  </div>
+                )}
+                {recipe.image_data ? (
+                  <img src={recipe.image_data} alt={recipe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 ) : (
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--text-ultra-muted)', opacity: 0.5 }}>
@@ -286,42 +271,34 @@ export default function Recipes() {
                   )}
                 </div>
                 {/* Actions */}
-                <div style={{ marginTop: 'auto', paddingTop: 11, borderTop: '1px solid var(--divider)', display: 'flex', gap: 7 }}>
-                  <Link to={`/recipes/${recipe.id}`} className="btn-primary" style={{ flex: 1, height: 38, borderRadius: 11, fontSize: 13.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                    Manage
-                  </Link>
-                  <button onClick={e => openEdit(recipe, e)} style={{ height: 38, padding: '0 13px', borderRadius: 11, border: '1px solid var(--input-border)', background: 'var(--card-bg)', fontSize: 13.5, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                    Edit
-                  </button>
-                  <button
-                    onClick={e => handleDuplicate(recipe, e)}
-                    disabled={duplicating === recipe.id}
-                    title="Duplicate recipe"
-                    style={{ width: 38, height: 38, borderRadius: 11, border: '1px solid var(--input-border)', background: 'var(--card-bg)', cursor: duplicating === recipe.id ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexShrink: 0, opacity: duplicating === recipe.id ? 0.5 : 1 }}
-                  >
+                <div style={{ marginTop: 'auto', paddingTop: 11, borderTop: '1px solid var(--divider)', display: 'flex', gap: 7 }}
+                  onClick={e => e.stopPropagation()}>
+                  <Link to={`/recipes/${recipe.id}`} className="btn-primary" style={{ flex: 1, height: 38, borderRadius: 11, fontSize: 13.5, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, textDecoration: 'none' }}>
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                      <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
-                      <path d="M1 9V2a1 1 0 011-1h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      <rect x="1.5" y="2" width="10" height="9" rx="1.2" stroke="currentColor" strokeWidth="1.3"/>
+                      <path d="M4 5.5h5M4 8h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
                     </svg>
-                  </button>
-                  {pendingDelete?.id === recipe.id ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0 8px' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Delete?</span>
-                      <button onClick={e => { e.preventDefault(); handleDelete(recipe, e); setPendingDelete(null); }} style={{ fontSize: 12, color: 'oklch(0.55 0.16 28)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: '0 3px' }}>Yes</button>
-                      <button onClick={() => setPendingDelete(null)} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 3px' }}>No</button>
+                    Manage Recipe
+                  </Link>
+                  {deleteConfirmId === recipe.id ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0 4px' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Delete?</span>
+                      <button onClick={() => { handleDelete(recipe); setDeleteConfirmId(null); }} style={{ fontSize: 12, color: 'oklch(0.55 0.16 28)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'inherit' }}>Yes</button>
+                      <button onClick={() => setDeleteConfirmId(null)} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontFamily: 'inherit' }}>No</button>
                     </span>
                   ) : (
-                    <button onClick={() => setPendingDelete(recipe)} style={{ width: 38, height: 38, borderRadius: 11, border: '1px solid #F0DFDB', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'oklch(0.60 0.14 28)', flexShrink: 0 }}>
+                    <button onClick={() => setDeleteConfirmId(recipe.id)} title="Delete recipe" style={{ width: 38, height: 38, borderRadius: 11, border: '1px solid #F0DFDB', background: 'var(--card-bg)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'oklch(0.60 0.14 28)', flexShrink: 0 }}>
                       <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M4.5 3.5V2.5h4v1M5 6v4M8 6v4M3 3.5l.5 7h6l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </button>
                   )}
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
 
-          {/* Add Recipe ghost card */}
-          <button onClick={openAdd}
+          {/* Add Recipe ghost card — only shown when recipes already exist */}
+          {recipes.length > 0 && <button onClick={openAdd}
             style={{ minHeight: 280, borderRadius: 22, border: '1.5px dashed var(--input-border)', background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'all 220ms ease', padding: 24 }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--card-bg)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--input-border)'; }}
@@ -331,7 +308,7 @@ export default function Recipes() {
             </div>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>Add Recipe</span>
             <span style={{ fontSize: 12.5, color: 'var(--text-ultra-muted)', textAlign: 'center', maxWidth: '22ch', lineHeight: 1.5 }}>Start with a dish name and how many servings it makes</span>
-          </button>
+          </button>}
 
           {recipes.length === 0 && (
             <div className="empty-state" style={{ gridColumn: '1 / -1' }}>

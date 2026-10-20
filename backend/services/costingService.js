@@ -1,5 +1,44 @@
 const VALID_SOURCES = ['dti', 'da', 'manual', 'latest'];
 
+// Each entry: factor to convert that unit into its SI base (kg, L, or pc).
+const UNIT_TO_SI = {
+  // Weight → kg
+  kg: { base: 'kg', factor: 1 },
+  g:  { base: 'kg', factor: 0.001 },
+  mg: { base: 'kg', factor: 0.000001 },
+  lb: { base: 'kg', factor: 0.453592 },
+  oz: { base: 'kg', factor: 0.028350 },
+  // Volume → L
+  l:    { base: 'L', factor: 1 },
+  L:    { base: 'L', factor: 1 },
+  ml:   { base: 'L', factor: 0.001 },
+  cl:   { base: 'L', factor: 0.01 },
+  dl:   { base: 'L', factor: 0.1 },
+  tsp:  { base: 'L', factor: 0.00492892 },
+  tbsp: { base: 'L', factor: 0.0147868 },
+  cup:  { base: 'L', factor: 0.236588 },
+  'fl oz': { base: 'L', factor: 0.0295735 },
+  pt:   { base: 'L', factor: 0.473176 },
+  qt:   { base: 'L', factor: 0.946353 },
+  gal:  { base: 'L', factor: 3.785411 },
+  // Count → pc
+  pc:     { base: 'pc', factor: 1 },
+  pcs:    { base: 'pc', factor: 1 },
+  piece:  { base: 'pc', factor: 1 },
+  pieces: { base: 'pc', factor: 1 },
+};
+
+// Returns a multiplier to convert `recipeUnit` quantities into `baseUnit` quantities.
+// Returns null when conversion is unknown or units are in different categories (e.g. g vs L).
+const getConversionFactor = (recipeUnit, baseUnit) => {
+  if (!recipeUnit || !baseUnit) return null;
+  const from = UNIT_TO_SI[recipeUnit.trim()];
+  const to   = UNIT_TO_SI[baseUnit.trim()];
+  if (!from || !to) return null;
+  if (from.base !== to.base) return null;
+  return from.factor / to.factor;
+};
+
 const computeRecipeCost = async (recipeId, priceSource, db) => {
   if (!recipeId) throw new Error('recipeId is required');
   if (!priceSource || !VALID_SOURCES.includes(priceSource)) {
@@ -11,9 +50,10 @@ const computeRecipeCost = async (recipeId, priceSource, db) => {
   if (!recipe) throw new Error(`Recipe ${recipeId} not found`);
   if (recipe.servings === 0) throw new Error(`Recipe "${recipe.name}" has zero servings`);
 
-  // Fetch all recipe_ingredients joined with ingredient name
+  // Fetch all recipe_ingredients joined with ingredient — include i.unit (base/price unit)
   const [ingredients] = await db.query(
-    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit, COALESCE(ri.waste_pct, 0) AS waste_pct
+    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit, COALESCE(ri.waste_pct, 0) AS waste_pct,
+            i.unit AS base_unit
      FROM recipe_ingredients ri
      JOIN ingredients i ON i.id = ri.ingredient_id
      WHERE ri.recipe_id = ?`,
@@ -55,18 +95,32 @@ const computeRecipeCost = async (recipeId, priceSource, db) => {
       const unit_price       = priceRow ? parseFloat(priceRow.price) : null;
       const missing_price    = unit_price === null;
       const waste_pct        = parseFloat(ing.waste_pct || 0);
+      const raw_quantity     = parseFloat(ing.quantity);
       const effective_quantity = waste_pct > 0
-        ? parseFloat((parseFloat(ing.quantity) / (1 - waste_pct / 100)).toFixed(4))
-        : parseFloat(ing.quantity);
-      const ingredient_cost  = missing_price ? null : parseFloat((effective_quantity * unit_price).toFixed(2));
+        ? parseFloat((raw_quantity / (1 - waste_pct / 100)).toFixed(4))
+        : raw_quantity;
+
+      // Convert recipe unit → ingredient base unit before pricing
+      const conversion_factor = getConversionFactor(ing.unit, ing.base_unit);
+      const unit_mismatch     = conversion_factor === null && ing.unit !== ing.base_unit;
+      const converted_quantity = conversion_factor !== null
+        ? parseFloat((effective_quantity * conversion_factor).toFixed(6))
+        : effective_quantity;
+
+      const ingredient_cost  = missing_price ? null
+        : parseFloat((converted_quantity * unit_price).toFixed(2));
 
       return {
         ingredient_id:      ing.ingredient_id,
         name:               ing.name,
-        quantity:           parseFloat(ing.quantity),
+        quantity:           raw_quantity,
         unit:               ing.unit,
+        base_unit:          ing.base_unit,
         waste_pct,
         effective_quantity,
+        converted_quantity,
+        conversion_factor,
+        unit_mismatch,
         unit_price,
         ingredient_cost,
         price_source:       priceRow?.price_source ?? null,
@@ -168,8 +222,14 @@ const _computeFromPriceMap = (ingredients, priceMap, servings, setting) => {
     const effective_qty = waste_pct > 0
       ? parseFloat(ing.quantity) / (1 - waste_pct / 100)
       : parseFloat(ing.quantity);
+
+    const conversion_factor = getConversionFactor(ing.unit, ing.base_unit);
+    const converted_qty = conversion_factor !== null
+      ? effective_qty * conversion_factor
+      : effective_qty;
+
     const ingredient_cost = unit_price !== null
-      ? parseFloat((effective_qty * unit_price).toFixed(2))
+      ? parseFloat((converted_qty * unit_price).toFixed(2))
       : null;
     if (ingredient_cost === null) hasNull = true;
     else total += ingredient_cost;
@@ -203,7 +263,8 @@ const computeImpactAnalysis = async (recipeId, oldPrices, newPrices, pricingSett
   if (recipe.servings === 0) throw new Error(`Recipe "${recipe.name}" has zero servings`);
 
   const [ingredients] = await db.query(
-    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit, COALESCE(ri.waste_pct, 0) AS waste_pct
+    `SELECT ri.ingredient_id, i.name, ri.quantity, ri.unit, COALESCE(ri.waste_pct, 0) AS waste_pct,
+            i.unit AS base_unit
      FROM recipe_ingredients ri
      JOIN ingredients i ON i.id = ri.ingredient_id
      WHERE ri.recipe_id = ?`,
