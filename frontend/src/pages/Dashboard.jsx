@@ -4,6 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import api from '../lib/api';
+import { RecipeThumb } from '../components/RecipePhoto';
 import { loadPrefs } from '../lib/prefs';
 import { getUser } from '../lib/auth';
 import { SkeletonTable, SkeletonStats } from '../components/Skeleton';
@@ -175,6 +176,7 @@ export default function Dashboard() {
           return {
             id:           r.id,
             name:         r.name,
+            image:        r.image_data ?? null,
             servings:     r.servings,
             portionCost:  latest ? parseFloat(latest.portion_cost) : null,
             recPrice:     latest ? parseFloat(latest.recommended_price) : null,
@@ -508,9 +510,13 @@ export default function Dashboard() {
                       {/* Dish name */}
                       <td style={{ padding: '14px 12px 14px 22px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: 10, background: row.status === 'unpriced' ? '#F5F0E8' : T.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 700, color: row.status === 'unpriced' ? T.textMuted : T.accent, flexShrink: 0 }}>
-                            {initials(row.name)}
-                          </div>
+                          {row.image ? (
+                            <RecipeThumb src={row.image} name={row.name} size={32} radius={10} />
+                          ) : (
+                            <div style={{ width: 32, height: 32, borderRadius: 10, background: row.status === 'unpriced' ? '#F5F0E8' : T.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 700, color: row.status === 'unpriced' ? T.textMuted : T.accent, flexShrink: 0 }}>
+                              {initials(row.name)}
+                            </div>
+                          )}
                           <div>
                             <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{row.name}</div>
                             <div style={{ fontSize: 11.5, color: T.textMuted }}>{row.servings} serving{row.servings !== 1 ? 's' : ''} per batch</div>

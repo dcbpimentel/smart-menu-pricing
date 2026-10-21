@@ -1,4 +1,5 @@
 const db = require('../utils/db');
+const { normalizeUnit } = require('../utils/units');
 
 // Title-case and trim category so "condiments" and "Condiments" don't split the filter pills
 const normalizeCategory = (cat) => {
@@ -50,6 +51,22 @@ const createIngredient = async (req, res) => {
 const updateIngredient = async (req, res) => {
   try {
     const { name, unit, category } = req.body;
+
+    // Stored prices are per the ingredient's unit, so changing the unit would silently
+    // reinterpret them (₱/kg read as ₱/g). Only allow it while there are no prices.
+    if (unit) {
+      const [[current]] = await db.query('SELECT unit FROM ingredients WHERE id = ?', [req.params.id]);
+      if (current && normalizeUnit(unit) !== normalizeUnit(current.unit)) {
+        const [[{ n }]] = await db.query('SELECT COUNT(*) AS n FROM ingredient_prices WHERE ingredient_id = ?', [req.params.id]);
+        if (n > 0) {
+          return res.status(409).json({
+            success: false, data: null,
+            message: `This ingredient has ${n} price${n === 1 ? '' : 's'} recorded per ${current.unit}. Changing the unit would change what those prices mean. Add a new ingredient with the ${unit.trim()} unit instead.`,
+          });
+        }
+      }
+    }
+
     const [result] = await db.query(
       'UPDATE ingredients SET name = COALESCE(?, name), unit = COALESCE(?, unit), category = COALESCE(?, category) WHERE id = ?',
       [name?.trim() ?? null, unit?.trim() ?? null, normalizeCategory(category) ?? null, req.params.id]

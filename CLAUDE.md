@@ -384,7 +384,7 @@ Scope boundaries established in the capstone paper:
 
 1. **Single-restaurant, single-currency** — the system is designed for one restaurant at a time; there is no multi-tenant or multi-branch support. All prices are in Philippine Peso (₱).
 
-2. **No unit conversion engine** — recipe quantities and ingredient base units must match (e.g., both in `kg`). The system does not convert grams to kilograms or millilitres to litres automatically.
+2. **Unit conversion within a dimension only** — recipe quantities are converted to the ingredient's price unit (g/mg/lb/oz → kg, ml/tsp/tbsp/cup → L, pcs → pc) by `backend/utils/units.js` (mirrored in `frontend/src/lib/units.js`). Cross-dimension conversions (e.g. g → pcs, cup of rice → kg) are not supported; the API rejects such recipe units with a 400.
 
 3. **No authentication or access control** — the system has no login, roles, or session management. It is intended for use on a trusted local network or single-device deployment.
 

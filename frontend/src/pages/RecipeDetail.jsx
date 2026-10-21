@@ -3,9 +3,17 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import api from '../lib/api';
 import Select from '../components/Select';
+import { PhotoPicker, RecipeThumb } from '../components/RecipePhoto';
 import { useToast } from '../components/Toast';
 import { formatCurrency } from '../lib/format';
 import { INGREDIENT_UNITS as UNITS } from '../lib/constants';
+import { getConversionFactor, unitOptionsFor } from '../lib/units';
+
+const fmtQty = (n) => Number(n.toFixed(4)).toString();
+
+// Ingredient table columns. Fixed widths so the header, every row and the total line up.
+const ROW_COLS = 'minmax(0, 1fr) 120px 120px 104px';
+const COL_ALIGN = ['left', 'left', 'right', 'center'];
 
 const iStyle = {
   width: '100%', boxSizing: 'border-box', height: 38,
@@ -35,6 +43,11 @@ function AddModal({ open, onClose, availableIngredients, recipeId, onAdded }) {
   }, [open]);
 
   if (!open) return null;
+
+  const selectedIng = availableIngredients.find(ing => String(ing.id) === String(form.ingredient_id));
+  const unitChoices = selectedIng ? unitOptionsFor(selectedIng.unit) : UNITS;
+  const factor      = selectedIng ? getConversionFactor(form.unit, selectedIng.unit) : null;
+  const qtyNum      = parseFloat(form.quantity);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +80,11 @@ function AddModal({ open, onClose, availableIngredients, recipeId, onAdded }) {
             <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
               Ingredient <span style={{ color: 'oklch(0.60 0.14 28)' }}>*</span>
             </label>
-            <Select value={String(form.ingredient_id)} onChange={v => setForm(f => ({ ...f, ingredient_id: v }))}
+            <Select value={String(form.ingredient_id)} onChange={v => {
+                // Default the recipe unit to the unit the ingredient is priced in
+                const ing = availableIngredients.find(i => String(i.id) === v);
+                setForm(f => ({ ...f, ingredient_id: v, unit: ing?.unit || f.unit }));
+              }}
               options={availableIngredients.map(ing => ({ value: String(ing.id), label: ing.name }))}
               placeholder="Choose ingredient…" searchable />
           </div>
@@ -84,9 +101,15 @@ function AddModal({ open, onClose, availableIngredients, recipeId, onAdded }) {
               <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
                 Unit <span style={{ color: 'oklch(0.60 0.14 28)' }}>*</span>
               </label>
-              <Select value={form.unit} onChange={v => setForm(f => ({ ...f, unit: v }))} options={UNITS.map(u => ({ value: u, label: u }))} />
+              <Select value={form.unit} onChange={v => setForm(f => ({ ...f, unit: v }))} options={unitChoices.map(u => ({ value: u, label: u }))} />
             </div>
           </div>
+          {selectedIng && (
+            <p style={{ margin: '-4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+              {selectedIng.name} is priced per {selectedIng.unit}.
+              {factor != null && factor !== 1 && qtyNum > 0 && ` ${fmtQty(qtyNum)} ${form.unit} = ${fmtQty(qtyNum * factor)} ${selectedIng.unit}.`}
+            </p>
+          )}
           <div>
             <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
               Waste % <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-ultra-muted)' }}>— optional trim/prep loss</span>
@@ -118,7 +141,7 @@ function AddModal({ open, onClose, availableIngredients, recipeId, onAdded }) {
 }
 
 function EditRecipeModal({ recipe, onClose, onSaved, toast }) {
-  const [form, setForm]       = useState({ name: recipe.name, description: recipe.description || '', servings: String(recipe.servings) });
+  const [form, setForm]       = useState({ name: recipe.name, description: recipe.description || '', servings: String(recipe.servings), image: recipe.image_data || '' });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
 
@@ -130,7 +153,7 @@ function EditRecipeModal({ recipe, onClose, onSaved, toast }) {
     if (!servings || servings < 1) { setError('Servings must be at least 1.'); return; }
     setSaving(true); setError('');
     try {
-      await api.put(`/recipes/${recipe.id}`, { name, description: form.description.trim(), servings });
+      await api.put(`/recipes/${recipe.id}`, { name, description: form.description.trim(), servings, image_data: form.image || null });
       toast.success('Recipe updated');
       onSaved();
       onClose();
@@ -142,7 +165,7 @@ function EditRecipeModal({ recipe, onClose, onSaved, toast }) {
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 460, padding: '28px 28px 24px', boxShadow: '0 24px 64px rgba(0,0,0,0.14)' }}
+      <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 460, maxHeight: '90vh', overflowY: 'auto', padding: '28px 28px 24px', boxShadow: '0 24px 64px rgba(0,0,0,0.14)' }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
           <div>
@@ -153,6 +176,7 @@ function EditRecipeModal({ recipe, onClose, onSaved, toast }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <PhotoPicker value={form.image} onChange={image => setForm(f => ({ ...f, image }))} />
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5 }}>Recipe Name</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -259,7 +283,7 @@ export default function RecipeDetail() {
   const handleDuplicate = async () => {
     setDuplicating(true);
     try {
-      const payload = { name: `${recipe.name} (Copy)`, description: recipe.description || '', servings: recipe.servings };
+      const payload = { name: `${recipe.name} (Copy)`, description: recipe.description || '', servings: recipe.servings, category: recipe.category ?? null, image_data: recipe.image_data ?? null };
       const res = await api.post('/recipes', payload);
       const newId = res.data.data?.id;
       if (newId && recipe.ingredients?.length) {
@@ -294,12 +318,15 @@ export default function RecipeDetail() {
   const cancelEdit = () => { setEditingId(null); setEditError(''); };
 
   const saveEdit = async (ri) => {
+    const quantity = parseFloat(editForm.quantity);
+    if (!(quantity > 0)) { setEditError('Enter a quantity greater than 0.'); return; }
     setEditLoading(true); setEditError('');
     try {
       await api.put(`/recipes/${id}/ingredients/${ri.id}`, {
-        quantity: parseFloat(editForm.quantity), unit: editForm.unit, waste_pct: parseFloat(editForm.waste_pct) || 0,
+        quantity, unit: editForm.unit, waste_pct: parseFloat(editForm.waste_pct) || 0,
       });
       setEditingId(null); fetchRecipe();
+      toast.success(`${ri.name} updated`);
     } catch (err) { setEditError(err.response?.data?.message || 'Save failed.'); }
     finally { setEditLoading(false); }
   };
@@ -318,8 +345,10 @@ export default function RecipeDetail() {
   const estCost = (ri) => {
     const p = latestIngPrices[ri.ingredient_id];
     if (p == null) return null;
+    const factor = getConversionFactor(ri.unit, ri.base_unit);
+    if (factor == null) return null;
     const qty = ri.waste_pct > 0 ? ri.quantity / (1 - ri.waste_pct / 100) : ri.quantity;
-    return qty * p;
+    return qty * factor * p;
   };
 
   const totalCost = recipe?.ingredients?.reduce((sum, ri) => { const c = estCost(ri); return c != null ? sum + c : sum; }, 0) ?? 0;
@@ -361,6 +390,7 @@ export default function RecipeDetail() {
 
         {/* Full-width recipe header */}
         <div style={{ background: '#fff', border: '1px solid var(--card-border)', borderRadius: 16, padding: '22px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+          <RecipeThumb src={recipe.image_data} name={recipe.name} size={72} radius={14} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>{recipe.name}</h1>
             {recipe.description && (
@@ -376,9 +406,12 @@ export default function RecipeDetail() {
         </div>
 
         {/* Two-column body */}
-        <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
 
-          {/* ── LEFT: Pricing panel ── */}
+          {/* ── LEFT: Pricing + actions ── */}
+          <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Pricing panel */}
           <div style={{ background: '#fff', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Pricing</span>
@@ -483,9 +516,10 @@ export default function RecipeDetail() {
               </button>
             </div>
           </div>
+          </div>
 
           {/* ── RIGHT: Ingredients panel ── */}
-          <div style={{ background: '#fff', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ flex: '999 1 440px', minWidth: 0, background: '#fff', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden' }}>
 
             {/* Section header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 24px', borderBottom: recipe.ingredients?.length ? '1px solid var(--divider)' : 'none' }}>
@@ -506,9 +540,9 @@ export default function RecipeDetail() {
 
             {/* Column labels */}
             {!!recipe.ingredients?.length && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', gap: 0, padding: '8px 24px', background: 'var(--table-header-bg)', borderBottom: '1px solid var(--divider)' }}>
-                {['Ingredient', 'Quantity', 'Est. Cost', ''].map((h, i) => (
-                  <span key={i} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: i === 2 ? 'right' : 'left' }}>{h}</span>
+              <div style={{ display: 'grid', gridTemplateColumns: ROW_COLS, columnGap: 16, padding: '8px 24px', background: 'var(--table-header-bg)', borderBottom: '1px solid var(--divider)' }}>
+                {['Ingredient', 'Quantity', 'Est. Cost', 'Actions'].map((h, i) => (
+                  <span key={i} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: COL_ALIGN[i] }}>{h}</span>
                 ))}
               </div>
             )}
@@ -542,7 +576,7 @@ export default function RecipeDetail() {
 
                   {/* Normal row */}
                   {!isEditing && !isConfirming && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', alignItems: 'center', padding: '13px 24px', transition: 'background 0.1s' }}
+                    <div style={{ display: 'grid', gridTemplateColumns: ROW_COLS, columnGap: 16, alignItems: 'center', padding: '13px 24px', transition: 'background 0.1s' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--table-header-bg)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       {/* Name + waste */}
@@ -555,23 +589,31 @@ export default function RecipeDetail() {
                         )}
                       </div>
                       {/* Qty + unit */}
-                      <div style={{ fontSize: 13.5, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                      <div onClick={() => startEdit(ri)} title="Click to edit quantity"
+                        style={{ fontSize: 13.5, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         {ri.quantity}{' '}
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: '#f1f0ef', color: 'var(--text-muted)' }}>{ri.unit}</span>
+                        {(() => {
+                          const f = getConversionFactor(ri.unit, ri.base_unit);
+                          if (f == null) return <div style={{ fontSize: 11, color: 'oklch(0.55 0.15 50)', marginTop: 2 }}>Can't convert to {ri.base_unit}</div>;
+                          if (f === 1) return null;
+                          return <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>= {fmtQty(ri.quantity * f)} {ri.base_unit}</div>;
+                        })()}
                       </div>
                       {/* Cost */}
-                      <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: cost != null ? 'var(--text-primary)' : 'var(--text-ultra-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                      <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: cost != null ? 'var(--text-primary)' : 'var(--text-ultra-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                         {cost != null ? formatCurrency(cost) : '—'}
                       </div>
                       {/* Actions */}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
-                        <button onClick={() => startEdit(ri)} title="Edit"
-                          style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
+                        <button onClick={() => startEdit(ri)} title={`Edit ${ri.name} quantity`}
+                          style={{ height: 30, padding: '0 10px', borderRadius: 8, border: '1px solid var(--input-border)', background: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit' }}
                           onMouseEnter={e => { e.currentTarget.style.background = '#f1f0ef'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M7.5 2.5l3 3-7 7H.5v-3l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+                          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
+                          <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><path d="M7.5 2.5l3 3-7 7H.5v-3l7-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+                          Edit
                         </button>
-                        <button onClick={() => { setEditingId(null); setConfirmRemoveId(ri.id); }} title="Remove" disabled={isRemoving}
+                        <button onClick={() => { setEditingId(null); setConfirmRemoveId(ri.id); }} title={`Remove ${ri.name}`} aria-label={`Remove ${ri.name}`} disabled={isRemoving}
                           style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
                           onMouseEnter={e => { e.currentTarget.style.background = 'oklch(0.97 0.025 30)'; e.currentTarget.style.color = 'oklch(0.55 0.16 28)'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
@@ -587,16 +629,17 @@ export default function RecipeDetail() {
                       <p style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Editing: {ri.name}
                       </p>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 140px', gap: 12, marginBottom: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12, marginBottom: 12 }}>
                         <div>
                           <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5 }}>Quantity</label>
                           <input type="number" min="0.0001" step="any" autoFocus value={editForm.quantity}
                             onChange={e => setEditForm(f => ({ ...f, quantity: e.target.value }))}
+                            onKeyDown={e => { if (e.key === 'Enter') saveEdit(ri); if (e.key === 'Escape') cancelEdit(); }}
                             style={{ ...iStyle, height: 36 }} onFocus={iFocus} onBlur={iBlur} />
                         </div>
                         <div>
                           <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5 }}>Unit</label>
-                          <Select value={editForm.unit} onChange={v => setEditForm(f => ({ ...f, unit: v }))} options={UNITS.map(u => ({ value: u, label: u }))} />
+                          <Select value={editForm.unit} onChange={v => setEditForm(f => ({ ...f, unit: v }))} options={(ri.base_unit ? unitOptionsFor(ri.base_unit) : UNITS).map(u => ({ value: u, label: u }))} />
                         </div>
                         <div>
                           <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5 }}>Waste %</label>
@@ -608,6 +651,18 @@ export default function RecipeDetail() {
                           </div>
                         </div>
                       </div>
+                      {(() => {
+                        const preview = estCost({ ...ri, quantity: parseFloat(editForm.quantity), unit: editForm.unit, waste_pct: parseFloat(editForm.waste_pct) || 0 });
+                        const f = getConversionFactor(editForm.unit, ri.base_unit);
+                        const q = parseFloat(editForm.quantity);
+                        if (!(q > 0)) return null;
+                        return (
+                          <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
+                            {f != null && f !== 1 && <>{fmtQty(q)} {editForm.unit} = {fmtQty(q * f)} {ri.base_unit}. </>}
+                            {preview != null && <>New est. cost: <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(preview)}</strong>{cost != null && <> (was {formatCurrency(cost)})</>}</>}
+                          </p>
+                        );
+                      })()}
                       {editError && <p style={{ fontSize: 12, color: 'oklch(0.48 0.14 28)', margin: '0 0 10px' }}>{editError}</p>}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => saveEdit(ri)} disabled={editLoading}
@@ -646,11 +701,11 @@ export default function RecipeDetail() {
 
             {/* Total row */}
             {hasAnyPrice && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 100px 80px', alignItems: 'center', padding: '13px 24px', background: '#FDFBF8', borderTop: '2px solid #F3EDE4' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: ROW_COLS, columnGap: 16, alignItems: 'center', padding: '13px 24px', background: '#FDFBF8', borderTop: '2px solid #F3EDE4' }}>
                 <span style={{ gridColumn: '1 / 3', fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Total Ingredient Cost
                 </span>
-                <span style={{ textAlign: 'right', fontSize: 17, fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ textAlign: 'right', fontSize: 17, fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
                   {formatCurrency(totalCost)}
                 </span>
                 <span />

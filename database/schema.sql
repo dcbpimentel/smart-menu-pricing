@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   description  TEXT             NULL,
   servings     INT UNSIGNED     NOT NULL DEFAULT 1 COMMENT 'Number of portions this recipe yields',
   category     VARCHAR(80)      NULL     COMMENT 'e.g. Main Course, Appetizer, Dessert, Beverage, Side Dish',
+  image_data   LONGTEXT         NULL     COMMENT 'Optional dish photo as a data URL',
   created_at   DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -149,6 +150,8 @@ CREATE TABLE IF NOT EXISTS pricing_settings (
 --      recipe_cost       = Σ (quantity × unit_price)
 --      portion_cost      = recipe_cost / servings
 --      recommended_price = portion_cost / (target_food_cost_pct / 100)
+--    Values are computed at full precision; the rounding rule
+--    (nearest ₱5 / ₱10) applies only to recommended_price.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS costing_outputs (
   id                   INT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -159,6 +162,7 @@ CREATE TABLE IF NOT EXISTS costing_outputs (
   recommended_price    DECIMAL(10,2)    NOT NULL COMMENT 'Suggested selling price after applying pricing rule',
   actual_selling_price DECIMAL(10,2)    NULL     COMMENT 'Actual price the owner charges — set manually after computation',
   applied_price_source VARCHAR(50)      NULL     COMMENT 'Snapshot label: e.g. "dti:2025-06-01" or "manual"',
+  price_snapshot       JSON             NULL     COMMENT 'Per-ingredient prices used: price id, source, date, unit price, cost',
   computed_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (id),

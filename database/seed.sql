@@ -9,21 +9,21 @@ INSERT INTO ingredients (name, unit, category) VALUES
   ('Onion',         'kg', 'Vegetable'),
   ('Garlic',        'kg', 'Vegetable');
 
--- Current market prices (manual entry, realistic Philippine wet-market rates)
+-- Sample prices (demo data) so the system is usable right away
 INSERT INTO ingredient_prices (ingredient_id, price, source, provenance_note, extraction_date, is_manual)
-SELECT id,  52.00, 'manual', 'NFA accredited rice retailer, June 2025',         '2025-06-01', TRUE FROM ingredients WHERE name = 'Rice';
+SELECT id,  52.00, 'manual', 'Sample price (demo data)',         '2025-06-01', TRUE FROM ingredients WHERE name = 'Rice';
 
 INSERT INTO ingredient_prices (ingredient_id, price, source, provenance_note, extraction_date, is_manual)
-SELECT id, 220.00, 'manual', 'Local poultry farm gate price, June 2025',         '2025-06-01', TRUE FROM ingredients WHERE name = 'Chicken Breast';
+SELECT id, 220.00, 'manual', 'Sample price (demo data)',         '2025-06-01', TRUE FROM ingredients WHERE name = 'Chicken Breast';
 
 INSERT INTO ingredient_prices (ingredient_id, price, source, provenance_note, extraction_date, is_manual)
-SELECT id, 280.00, 'manual', 'Wet market pork section, June 2025',               '2025-06-01', TRUE FROM ingredients WHERE name = 'Pork Belly';
+SELECT id, 280.00, 'manual', 'Sample price (demo data)',               '2025-06-01', TRUE FROM ingredients WHERE name = 'Pork Belly';
 
 INSERT INTO ingredient_prices (ingredient_id, price, source, provenance_note, extraction_date, is_manual)
-SELECT id,  80.00, 'manual', 'Divisoria vegetable stall, June 2025',             '2025-06-01', TRUE FROM ingredients WHERE name = 'Onion';
+SELECT id,  80.00, 'manual', 'Sample price (demo data)',             '2025-06-01', TRUE FROM ingredients WHERE name = 'Onion';
 
 INSERT INTO ingredient_prices (ingredient_id, price, source, provenance_note, extraction_date, is_manual)
-SELECT id, 120.00, 'manual', 'Divisoria vegetable stall, June 2025',             '2025-06-01', TRUE FROM ingredients WHERE name = 'Garlic';
+SELECT id, 120.00, 'manual', 'Sample price (demo data)',             '2025-06-01', TRUE FROM ingredients WHERE name = 'Garlic';
 
 -- Default admin account (password: admin123)
 INSERT INTO users (username, full_name, role, password_hash)
