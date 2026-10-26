@@ -19,12 +19,13 @@ const unitMismatchError = (rows) => {
 // (e.g. 1.005 * 100 = 100.49999999999999).
 const round2 = (n) => Math.round(Number((n * 100).toFixed(6))) / 100;
 
-// "none" = centavos; "nearest5" / "nearest10" = nearest ₱5 / ₱10, half up.
-// toFixed(9) keeps exact multiples exact (42 / 0.35 = 120.00000000000001 → 120).
+// "none" = centavos; "nearest5" / "nearest10" = round UP to the next ₱5 / ₱10, so the
+// menu price never falls below the target food cost.
+// toFixed(9) keeps exact multiples exact (42 / 0.35 = 120.00000000000001 → 120, not 125).
 const applyRoundingRule = (raw, rule) => {
   const step = rule === 'nearest5' ? 5 : rule === 'nearest10' ? 10 : null;
   if (!step) return round2(raw);
-  return Math.round(Number((raw / step).toFixed(9))) * step;
+  return Math.ceil(Number((raw / step).toFixed(9))) * step;
 };
 
 const getPricingSetting = async (pricingSettingId, db) => {
@@ -227,19 +228,9 @@ const computeImpactAnalysis = async (recipeId, oldPrices, newPrices, pricingSett
   const oldSet = computeFromPriceMap(ingredients, oldPrices, recipe.servings, setting);
   const newSet = computeFromPriceMap(ingredients, newPrices, recipe.servings, setting);
 
-  // Contribution margin uses the menu price the owner actually charges when one is saved;
-  // otherwise each scenario's recommended price stands in for the selling price.
-  const [[menu]] = await db.query(
-    `SELECT actual_selling_price FROM costing_outputs
-     WHERE recipe_id = ? AND actual_selling_price IS NOT NULL
-     ORDER BY computed_at DESC, id DESC LIMIT 1`,
-    [recipe.id]
-  );
-  const menu_price = menu ? parseFloat(menu.actual_selling_price) : null;
-  const sellingOld = menu_price ?? oldSet.recommended_price;
-  const sellingNew = menu_price ?? newSet.recommended_price;
-  const cmOld = computeContributionMargin(sellingOld, oldSet.portion_cost);
-  const cmNew = computeContributionMargin(sellingNew, newSet.portion_cost);
+  // Margin between the recommended price and the portion cost (paper §3.3, seventh layer)
+  const cmOld = computeContributionMargin(oldSet.recommended_price, oldSet.portion_cost);
+  const cmNew = computeContributionMargin(newSet.recommended_price, newSet.portion_cost);
 
   const numChange = (o, n) => (o === null || n === null) ? null : round2(n - o);
   const pctChange = (o, n) => (o === null || n === null || o === 0) ? null
@@ -261,10 +252,8 @@ const computeImpactAnalysis = async (recipeId, oldPrices, newPrices, pricingSett
     recipe_id:   recipe.id,
     recipe_name: recipe.name,
     servings:    recipe.servings,
-    selling_price_basis: menu_price != null ? 'menu_price' : 'recommended_price',
-    menu_price,
-    old: { recipe_cost: oldSet.recipe_cost, portion_cost: oldSet.portion_cost, recommended_price: oldSet.recommended_price, selling_price: sellingOld, contribution_margin: cmOld },
-    new: { recipe_cost: newSet.recipe_cost, portion_cost: newSet.portion_cost, recommended_price: newSet.recommended_price, selling_price: sellingNew, contribution_margin: cmNew },
+    old: { recipe_cost: oldSet.recipe_cost, portion_cost: oldSet.portion_cost, recommended_price: oldSet.recommended_price, contribution_margin: cmOld },
+    new: { recipe_cost: newSet.recipe_cost, portion_cost: newSet.portion_cost, recommended_price: newSet.recommended_price, contribution_margin: cmNew },
     diff: {
       recipe_cost_change:         numChange(oldSet.recipe_cost,        newSet.recipe_cost),
       recipe_cost_pct:            pctChange(oldSet.recipe_cost,        newSet.recipe_cost),

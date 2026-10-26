@@ -63,6 +63,8 @@ const PAGE_META = {
   '/impact':      { kicker: 'Analysis', title: 'Impact Analysis', sub: 'Simulate ingredient price changes' },
   '/settings':    { kicker: 'System',   title: 'Settings',        sub: 'Restaurant profile and preferences' },
   '/help':        { kicker: 'Support',  title: 'Help & Guide',    sub: 'Learn how to use Smart Menu Pricing' },
+  '/profile':     { kicker: 'Account',  title: 'Profile',         sub: 'Your name, password, and sign-out' },
+  '/team':        { kicker: 'Account',  title: 'Team',            sub: 'Manage staff accounts' },
 };
 
 function initials(name = '') {

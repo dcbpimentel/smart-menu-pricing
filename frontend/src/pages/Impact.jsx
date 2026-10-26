@@ -366,11 +366,8 @@ function DiffStatCards({ result }) {
       pct:  result.diff?.recommended_price_pct,
     },
     {
-      label: 'Contribution Margin',
-      // CM = selling price − portion cost; uses the saved menu price when there is one
-      sub: result.selling_price_basis === 'menu_price'
-        ? `Menu price ${formatCurrency(result.menu_price)} − portion cost`
-        : 'Suggested price − portion cost',
+      label: 'Margin',
+      sub: 'Recommended price − portion cost',
       old: result.old?.contribution_margin,
       new: result.new?.contribution_margin,
       diff: result.diff?.contribution_margin_change,

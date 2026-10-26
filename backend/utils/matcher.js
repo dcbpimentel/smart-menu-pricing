@@ -10,28 +10,29 @@ const normalizeName = (name) =>
     .trim();
 
 const matchToIngredient = async (normalized_name, db) => {
-  const [rows] = await db.query('SELECT id, name FROM ingredients');
+  const [rows] = await db.query('SELECT id, name, unit FROM ingredients');
 
-  let bestId = null;
-  let bestName = null;
+  let best = null;
   let bestDist = Infinity;
 
   for (const row of rows) {
     const d = distance(normalized_name, normalizeName(row.name));
     if (d < bestDist) {
       bestDist = d;
-      bestId = row.id;
-      bestName = row.name;
+      best = row;
     }
   }
 
   if (rows.length === 0 || bestDist > 6) {
-    return { matched: false, ingredient_id: null, matched_name: null, flag_reason: 'no_match' };
+    return { matched: false, ingredient_id: null, matched_name: null, ingredient_unit: null, flag_reason: 'no_match' };
   }
-  if (bestDist <= 3) {
-    return { matched: true, ingredient_id: bestId, matched_name: bestName };
+  // 3 edits is a typo in "chicken breast" but a different word in "melon" vs "onion",
+  // so a full match also needs the edits to be at most a quarter of the name's length.
+  const longest = Math.max(normalized_name.length, normalizeName(best.name).length);
+  if (bestDist <= 3 && bestDist <= longest * 0.25) {
+    return { matched: true, ingredient_id: best.id, matched_name: best.name, ingredient_unit: best.unit };
   }
-  return { matched: 'partial', ingredient_id: bestId, matched_name: bestName, flag_reason: 'low_confidence_match' };
+  return { matched: 'partial', ingredient_id: best.id, matched_name: best.name, ingredient_unit: best.unit, flag_reason: 'low_confidence_match' };
 };
 
 module.exports = { matchToIngredient };

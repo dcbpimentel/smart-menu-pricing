@@ -230,7 +230,7 @@ export default function Reports() {
   const profileOptions = profiles.map(p => ({
     value: String(p.id),
     label: p.label,
-    description: `${p.target_food_cost_pct}% food cost · ${p.rounding_rule === 'none' ? 'No rounding' : p.rounding_rule === 'nearest5' ? 'Round to ₱5' : 'Round to ₱10'}`,
+    description: `${p.target_food_cost_pct}% food cost · ${p.rounding_rule === 'none' ? 'No rounding' : p.rounding_rule === 'nearest5' ? 'Round up to ₱5' : 'Round up to ₱10'}`,
   }));
 
   const thStyle = {

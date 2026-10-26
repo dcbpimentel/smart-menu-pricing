@@ -8,7 +8,7 @@ import { RecipeThumb } from '../components/RecipePhoto';
 import { loadPrefs } from '../lib/prefs';
 import { getUser } from '../lib/auth';
 import { SkeletonTable, SkeletonStats } from '../components/Skeleton';
-import { formatCurrency } from '../lib/format';
+import { formatCurrency, localISODate } from '../lib/format';
 
 const fmtDate = (d) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 const fmtDateLong = (d) => new Date(d).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -23,7 +23,7 @@ function initials(name = '') {
   const parts = name.trim().split(/\s+/);
   return parts.length === 1 ? (parts[0][0] || '?').toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
-function daysAgoISO(n) { return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); }
+function daysAgoISO(n) { return localISODate(new Date(Date.now() - n * 24 * 60 * 60 * 1000)); }
 
 
 const T = {

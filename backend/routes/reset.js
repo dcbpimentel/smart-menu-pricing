@@ -25,8 +25,8 @@ router.post('/', async (req, res) => {
     // Remove non-admin users added during testing
     await conn.query("DELETE FROM users WHERE role != 'admin'");
 
-    // Re-seed 5 base ingredients
-    const today = new Date().toISOString().slice(0, 10);
+    // Clean baseline (paper §4.2.3): five base ingredients and the Default profile, with no
+    // prices, so a session never costs a respondent's recipe with leftover or sample prices
     await conn.query(`
       INSERT INTO ingredients (name, unit, category) VALUES
         ('Rice',           'kg', 'Grain'),
@@ -35,24 +35,6 @@ router.post('/', async (req, res) => {
         ('Onion',          'kg', 'Vegetable'),
         ('Garlic',         'kg', 'Vegetable')
     `);
-
-    // Sample prices so the system is usable right away; labeled so they are never
-    // mistaken for a restaurant's own records
-    const DEMO_NOTE = 'Sample price (demo data)';
-    const prices = [
-      ['Rice',           52.00,  DEMO_NOTE],
-      ['Chicken Breast', 220.00, DEMO_NOTE],
-      ['Pork Belly',     280.00, DEMO_NOTE],
-      ['Onion',          80.00,  DEMO_NOTE],
-      ['Garlic',         120.00, DEMO_NOTE],
-    ];
-    for (const [name, price, note] of prices) {
-      await conn.query(
-        `INSERT INTO ingredient_prices (ingredient_id, price, source, provenance_note, extraction_date, is_manual)
-         SELECT id, ?, 'manual', ?, ?, TRUE FROM ingredients WHERE name = ?`,
-        [price, note, today, name]
-      );
-    }
 
     // Restore Default pricing profile
     await conn.query(`

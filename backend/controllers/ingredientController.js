@@ -92,6 +92,18 @@ const deleteIngredient = async (req, res) => {
     }
     res.json({ success: true, data: null, message: 'Ingredient deleted' });
   } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      const [rows] = await db.query(
+        `SELECT r.name FROM recipe_ingredients ri JOIN recipes r ON r.id = ri.recipe_id
+         WHERE ri.ingredient_id = ? ORDER BY r.name`,
+        [req.params.id]
+      );
+      const names = rows.map((r) => r.name).join(', ');
+      return res.status(409).json({
+        success: false, data: null,
+        message: `This ingredient is used in ${rows.length} recipe${rows.length === 1 ? '' : 's'}${names ? ` (${names})` : ''}. Remove it from ${rows.length === 1 ? 'that recipe' : 'those recipes'} first.`,
+      });
+    }
     res.status(500).json({ success: false, data: null, message: err.message });
   }
 };

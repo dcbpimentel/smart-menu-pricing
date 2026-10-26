@@ -28,10 +28,10 @@ Code-only fixes. The paper is unchanged: each one makes the code do what the pap
 
 | Gap | Status | What changed |
 | :--- | :--- | :--- |
-| **H2** rounding | ✅ Fixed | Nearest ₱5/₱10 (half up), free of floating-point error. `costingService.js` `applyRoundingRule` |
+| **H2** rounding | ✅ Fixed (team decision) | Rounds **up** to the next ₱5/₱10 so the menu price never falls below the target food cost; floating-point error removed (₱42 portion @ 35% → ₱120, not ₱125). Paper §3.3 wording must say "rounded up to the nearest ₱5/₱10". `costingService.js` `applyRoundingRule` |
 | **H3** intermediate rounding | ✅ Fixed | Full precision through recipe cost and portion cost; only the final price uses the rounding rule. `costingService.js` `computePricing` |
 | **H5** partial costs | ✅ Fixed | When any ingredient has no price, nothing is saved and no price is recommended; Costing and batch say which ingredients need a price. `costingController.js` `costRecipe` |
-| Contribution margin | ✅ Fixed | CM = selling price − portion cost, using the saved menu price when there is one (otherwise the recommended price). `computeImpactAnalysis`; `Impact.jsx` card |
+| Contribution margin | ✅ Follows paper (team decision) | Impact shows the margin between the recommended price and the portion cost, for current and simulated prices, as written in paper §3.3 (seventh layer). `computeImpactAnalysis`; `Impact.jsx` "Margin" card |
 | Manual price source | ✅ Fixed | "Market purchase / Supplier quotation" field on both price forms, stored in `provenance_note` and shown in price history. `Ingredients.jsx` |
 | Snapshot traceability | ✅ Fixed | New `costing_outputs.price_snapshot` (JSON): each ingredient's price ID, source, date, unit price and cost. Added automatically at startup |
 | Ingredient unit edits | ✅ Fixed | The unit can't be changed once prices exist (409 with an explanation). `ingredientController.js` |

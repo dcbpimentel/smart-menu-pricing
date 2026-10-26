@@ -117,7 +117,7 @@ const FEATURES = [
     summary: 'The master list of everything you buy. Add, edit, or remove ingredients here. Click the clock icon on any ingredient to see its full price history or add a new price entry.',
     notes: [
       'Deleting an ingredient that is used in a recipe is not allowed. Remove it from the recipe first.',
-      'The "unit" must match what you use in your recipes (e.g. both in kg).',
+      'The unit is what the price is per (e.g. per kg). Recipes can use a related unit (g for a kg ingredient, ml or tbsp for an L ingredient) and the system converts it.',
     ],
   },
   {
@@ -125,7 +125,7 @@ const FEATURES = [
     path: '/recipes',
     summary: 'Your menu items. Each recipe is a dish with a list of ingredients and their quantities. The "Manage" button lets you add, edit, or remove ingredients from a recipe.',
     notes: [
-      'Quantities use the same unit as the ingredient. If beef is in kg, enter 0.5 for half a kilo.',
+      'Enter quantities in the ingredient\'s unit or a related one. If beef is priced per kg, you can enter 0.5 kg or 500 g. Units that measure different things (g for an ingredient priced per piece) are not allowed.',
       'Servings is the number of plates one full batch produces.',
     ],
   },

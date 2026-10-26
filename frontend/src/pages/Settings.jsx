@@ -902,7 +902,7 @@ function ResetSection() {
               <h3 style={{ margin: 0, fontSize: 15.5, fontWeight: 700, color: T.textPrimary }}>Reset system?</h3>
             </div>
             <p style={{ margin: '0 0 20px', fontSize: 13, color: T.textSecond, lineHeight: 1.55 }}>
-              All recipes, ingredients, prices, costing history, and inventory records will be deleted, along with non-admin users. Sample ingredients and the Default pricing profile are restored. This cannot be undone.
+              All recipes, ingredients, prices, costing history, and inventory records will be deleted, along with non-admin users. The five base ingredients (with no prices) and the Default pricing profile are restored. This cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <GhostBtn onClick={() => setShowConfirm(false)} disabled={loading}>Cancel</GhostBtn>

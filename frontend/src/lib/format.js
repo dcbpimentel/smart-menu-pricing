@@ -15,6 +15,11 @@ export function formatPct(value, decimals = 1) {
   return `${Number(value).toFixed(decimals)}%`;
 }
 
+// Calendar date in the user's own timezone; toISOString() would give yesterday before 8 AM in the Philippines
+export function localISODate(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function formatNumber(value) {
   if (value == null || isNaN(value)) return '0';
   return new Intl.NumberFormat('en-PH').format(value);

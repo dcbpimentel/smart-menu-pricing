@@ -5,7 +5,7 @@ import api from '../lib/api';
 import Select from '../components/Select';
 import { SkeletonTable } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
-import { formatCurrency } from '../lib/format';
+import { formatCurrency, localISODate } from '../lib/format';
 import { INGREDIENT_UNITS as UNITS, MANUAL_PRICE_ORIGINS } from '../lib/constants';
 
 const fmtDate = (d) => {
@@ -81,7 +81,7 @@ const getCategoryStyle = (cat) => {
 
 export default function Ingredients() {
   const toast = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localISODate();
 
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading]         = useState(true);

@@ -44,6 +44,25 @@ const STATUS_META = {
   no_match: { label: 'No match',     bg: '#F3EDE4',                 color: T.textMuted,            dot: '#C5BCAF' },
 };
 
+const FLAG_REASON_TEXT = {
+  date_assumed:         'No date found in the document; today was assumed',
+  missing_unit:         'No unit found for this row',
+  missing_price:        'No price found for this row',
+  unusual_price:        'Price is zero or above ₱5,000',
+  no_match:             'No ingredient with a similar name',
+  low_confidence_match: 'Name is only a partial match; check the ingredient',
+  unit_mismatch:        "Bulletin unit differs from the unit this ingredient is priced in; enter the price manually",
+  duplicate_match:      'Several bulletin rows matched this ingredient; enter the right one manually',
+};
+
+const flagReasonText = (entry) => {
+  if (!entry.flag_reason) return undefined;
+  const text = FLAG_REASON_TEXT[entry.flag_reason] ?? entry.flag_reason;
+  return entry.flag_reason === 'unit_mismatch' && entry.ingredient_unit
+    ? `${text} (bulletin: ${entry.normalized_unit}, ${entry.matched_name}: ${entry.ingredient_unit})`
+    : text;
+};
+
 /* ─── Sub-components ─────────────────────────────────────────────────────── */
 
 function StatusPill({ entry }) {
@@ -51,7 +70,7 @@ function StatusPill({ entry }) {
   const meta = STATUS_META[status];
   return (
     <span
-      title={entry.flagged && entry.flag_reason ? entry.flag_reason : undefined}
+      title={entry.flagged ? flagReasonText(entry) : undefined}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -805,7 +824,10 @@ export default function Extraction() {
                         onMouseLeave={e => e.currentTarget.style.background = isDataFlagged ? 'oklch(0.995 0.01 85)' : 'transparent'}
                       >
                         <td style={{ padding: '13px 12px 13px 22px', color: T.textPrimary, fontWeight: 600 }}>
-                          {entry.normalized_name}
+                          {entry.raw_name || entry.normalized_name}
+                          {entry.specification && (
+                            <div style={{ fontSize: 11.5, fontWeight: 500, color: T.textMuted, marginTop: 2 }}>{entry.specification}</div>
+                          )}
                         </td>
                         <td style={{ padding: '13px 12px', color: T.textSecond }}>
                           {entry.matched_name
