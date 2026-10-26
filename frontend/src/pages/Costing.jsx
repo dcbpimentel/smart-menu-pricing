@@ -3,10 +3,12 @@ import { FiDollarSign } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import Select from '../components/Select';
+import { RecipeThumb } from '../components/RecipePhoto';
 import { loadPrefs } from '../lib/prefs';
 import { SkeletonStats, SkeletonTable } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { formatCurrency, formatPct } from '../lib/format';
+import { getConversionFactor, unitOptionsFor } from '../lib/units';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 /* ─── Design tokens ────────────────────────────────────────────────────────── */
@@ -116,6 +118,15 @@ export default function Costing() {
 
   const resultRef = useRef(null);
 
+  // Editing the recipe's ingredients straight from the breakdown
+  const [allIngredients, setAllIngredients] = useState([]);
+  const [addOpen, setAddOpen]               = useState(false);
+  const [addForm, setAddForm]               = useState({ ingredient_id: '', quantity: '', unit: '' });
+  const [addError, setAddError]             = useState('');
+  const [addBusy, setAddBusy]               = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  const [removingId, setRemovingId]         = useState(null);
+
   const [actualPrice, setActualPrice]     = useState('');
   const [savingActual, setSavingActual]   = useState(false);
   const [savedMenuPrice, setSavedMenuPrice] = useState(null);
@@ -181,6 +192,70 @@ export default function Costing() {
     }
   };
 
+  // Re-run costing for the recipe on screen after its ingredients change
+  const recompute = async (rId) => {
+    const res = await api.post('/costing/compute', {
+      recipe_id:          rId,
+      pricing_setting_id: parseInt(settingId, 10),
+      price_source:       priceSource,
+    });
+    setResult(res.data.data);
+    setSaved(res.data.data.saved);
+    setActiveBatchRow(null);
+    fetchHistory(String(rId));
+  };
+
+  const openAddIngredient = async () => {
+    setAddOpen(true);
+    setAddError('');
+    setAddForm({ ingredient_id: '', quantity: '', unit: '' });
+    if (!allIngredients.length) {
+      try {
+        const res = await api.get('/ingredients');
+        setAllIngredients(res.data.data || []);
+      } catch {
+        setAddError('Failed to load ingredients.');
+      }
+    }
+  };
+
+  const handleAddIngredient = async () => {
+    const ing = allIngredients.find(i => String(i.id) === addForm.ingredient_id);
+    const qty = parseFloat(addForm.quantity);
+    if (!ing)            { setAddError('Choose an ingredient.'); return; }
+    if (!(qty > 0))      { setAddError('Enter a quantity greater than 0.'); return; }
+    setAddBusy(true);
+    setAddError('');
+    try {
+      await api.post(`/recipes/${result.recipe_id}/ingredients`, {
+        ingredient_id: ing.id,
+        quantity:      qty,
+        unit:          addForm.unit || ing.unit,
+      });
+      await recompute(result.recipe_id);
+      setAddOpen(false);
+      toast.success(`${ing.name} added and cost updated`);
+    } catch (err) {
+      setAddError(err.response?.data?.message || 'Failed to add ingredient.');
+    } finally {
+      setAddBusy(false);
+    }
+  };
+
+  const handleRemoveIngredient = async (row) => {
+    setRemovingId(row.recipe_ingredient_id);
+    try {
+      await api.delete(`/recipes/${result.recipe_id}/ingredients/${row.recipe_ingredient_id}`);
+      await recompute(result.recipe_id);
+      toast.success(`${row.name} removed and cost updated`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove ingredient.');
+    } finally {
+      setRemovingId(null);
+      setConfirmRemoveId(null);
+    }
+  };
+
   const handleCompute = async (e) => {
     e.preventDefault();
     setComputing(true);
@@ -195,10 +270,13 @@ export default function Costing() {
         pricing_setting_id: parseInt(settingId, 10),
         price_source:       priceSource,
       });
-      setResult(res.data.data);
-      setSaved(true);
+      const data = res.data.data;
+      setResult(data);
+      setSaved(data.saved);
       fetchHistory(recipeId);
-      if (res.data.data.is_duplicate) {
+      if (!data.saved) {
+        toast.error(res.data.message || 'Cost not computed');
+      } else if (data.is_duplicate) {
         toast.info('No changes detected — cost is already up to date');
       } else {
         toast.success('Cost computed and saved successfully');
@@ -231,8 +309,13 @@ export default function Costing() {
           price_source:       priceSource,
         });
         const data = res.data.data;
-        results.push({ recipe_id: recipe.id, recipe_name: recipe.name, ...data });
-        if (data.is_duplicate) dupCount++; else newCount++;
+        if (!data.saved) {
+          const names = data.missing_price_ingredients?.map(m => m.name).join(', ');
+          errors.push({ recipe_id: recipe.id, recipe_name: recipe.name, error: names ? `No price for ${names}` : (res.data.message || 'Not computed') });
+        } else {
+          results.push({ recipe_id: recipe.id, recipe_name: recipe.name, ...data });
+          if (data.is_duplicate) dupCount++; else newCount++;
+        }
       } catch (err) {
         errors.push({ recipe_id: recipe.id, recipe_name: recipe.name, error: err.response?.data?.message || 'Computation failed' });
       }
@@ -244,8 +327,11 @@ export default function Costing() {
       toast.success(`${newCount} new cost${newCount !== 1 ? 's' : ''} saved; ${dupCount} already up to date`);
     } else if (newCount > 0) {
       toast.success(`${newCount} recipe cost${newCount !== 1 ? 's' : ''} saved successfully`);
-    } else {
+    } else if (dupCount > 0) {
       toast.info('All costs already up to date — no changes detected');
+    }
+    if (errors.length > 0) {
+      toast.error(`${errors.length} recipe${errors.length !== 1 ? 's' : ''} not computed — see the list below`);
     }
     if (recipeId) fetchHistory(recipeId);
   };
@@ -496,7 +582,7 @@ export default function Costing() {
               <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Recipe *</label>
               <Select
                 value={recipeId}
-                onChange={v => { setRecipeId(v); setResult(null); setSaved(false); setActiveBatchRow(null); }}
+                onChange={v => { setRecipeId(v); setResult(null); setSaved(false); setActiveBatchRow(null); setAddOpen(false); setConfirmRemoveId(null); }}
                 options={recipeOpts.length ? recipeOpts : [{ value: '', label: 'No recipes' }]}
                 placeholder="Select recipe…"
                 disabled={!recipeOpts.length}
@@ -656,7 +742,10 @@ export default function Costing() {
                       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                     >
                       <td style={{ padding: '11px 12px 11px 19px', fontWeight: 600, color: T.textPrimary }}>
-                        {row.recipe_name}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, verticalAlign: 'middle' }}>
+                          <RecipeThumb src={recipes.find(r => r.id === row.recipe_id)?.image_data} name={row.recipe_name} size={26} radius={7} />
+                          {row.recipe_name}
+                        </span>
                         {isActive && <span style={{ marginLeft: 7, fontSize: 10.5, fontWeight: 700, color: T.accent, background: '#FFFFFF', padding: '1px 7px', borderRadius: 10, border: `1px solid ${T.accent}` }}>Viewing</span>}
                       </td>
                       <td style={{ padding: '11px 12px', textAlign: 'right', color: T.textSecond, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(row.portion_cost)}</td>
@@ -672,7 +761,7 @@ export default function Costing() {
                     <td style={{ padding: '11px 12px 11px 22px', fontWeight: 600, color: T.textPrimary }}>{row.recipe_name}</td>
                     <td colSpan={2} style={{ padding: '11px 12px', color: 'oklch(0.58 0.16 28)', fontSize: 12, fontStyle: 'italic' }}>{row.error}</td>
                     <td style={{ padding: '11px 22px 11px 12px', textAlign: 'right' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'oklch(0.965 0.04 28)', color: 'oklch(0.55 0.16 28)' }}>Failed</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'oklch(0.965 0.04 28)', color: 'oklch(0.55 0.16 28)' }}>Not computed</span>
                     </td>
                   </tr>
                 ))}
@@ -708,6 +797,10 @@ export default function Costing() {
               background: 'rgba(255,255,255,0.03)',
             }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <RecipeThumb src={recipes.find(r => r.id === result.recipe_id)?.image_data} name={result.recipe_name} size={40} radius={10} />
+                <span style={{ fontSize: 16, fontWeight: 600, color: '#FFFFFF' }}>{result.recipe_name}</span>
+              </div>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 8 }}>
                 Recommended Selling Price
               </div>
@@ -924,11 +1017,11 @@ export default function Costing() {
                 <path d="M6.5 2.5L1 13h14L9.5 2.5a1.7 1.7 0 00-3 0z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
               </svg>
               <div>
-                <span style={{ fontWeight: 700 }}>Missing prices — excluded from totals: </span>
+                <span style={{ fontWeight: 700 }}>Cost not computed. These ingredients have no price: </span>
                 {missing.map((item, i) => (
                   <span key={item.ingredient_id}>{i > 0 && ', '}<span style={{ fontWeight: 700 }}>{item.name}</span></span>
                 ))}
-                . Add prices in <span style={{ fontWeight: 700 }}>Ingredients</span> or run an extraction.
+                . Add a price for each in <span style={{ fontWeight: 700 }}>Ingredients</span>, then compute again. A cost from only some ingredients would understate the price.
               </div>
             </div>
           )}
@@ -946,9 +1039,26 @@ export default function Costing() {
                 </h4>
                 <span style={{ fontSize: 12, color: T.textMuted }}>
                   {result.ingredient_breakdown.length} ingredient{result.ingredient_breakdown.length !== 1 ? 's' : ''}
+                  {' · '}adding or removing here updates the recipe and recomputes
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={openAddIngredient}
+                  disabled={addOpen}
+                  style={{
+                    height: 34, padding: '0 13px', borderRadius: 10,
+                    border: `1px solid ${T.accent}`, background: '#FFFFFF',
+                    fontSize: 12.5, fontWeight: 700, color: T.accent,
+                    cursor: addOpen ? 'default' : 'pointer', fontFamily: 'inherit',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    opacity: addOpen ? 0.5 : 1,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                  Add ingredient
+                </button>
                 <button
                   type="button"
                   onClick={handlePrint}
@@ -1001,7 +1111,8 @@ export default function Costing() {
                       { label: 'Unit',        align: 'left' },
                       { label: 'Unit Price',  align: 'right' },
                       { label: 'Cost',        align: 'right' },
-                      { label: 'Source',      align: 'center', last: true },
+                      { label: 'Source',      align: 'center' },
+                      { label: '',            align: 'right', last: true },
                     ].map((h, i) => (
                       <th key={i} style={{
                         background: T.tblHeadBg, color: T.tblHead,
@@ -1087,15 +1198,100 @@ export default function Costing() {
                             </div>
                           )}
                         </td>
-                        <td style={{ padding: '13px 22px 13px 12px', textAlign: 'center' }}>
+                        <td style={{ padding: '13px 12px', textAlign: 'center' }}>
                           {row.missing_price
                             ? <span style={{ color: '#D5CCBF', fontSize: 12 }}>—</span>
                             : <SourceBadge src={row.price_source} />
                           }
                         </td>
+                        <td style={{ padding: '13px 22px 13px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {row.recipe_ingredient_id == null ? null : confirmRemoveId === row.recipe_ingredient_id ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 12, color: T.textSecond }}>Remove?</span>
+                              <button type="button" onClick={() => handleRemoveIngredient(row)} disabled={removingId === row.recipe_ingredient_id}
+                                style={{ height: 26, padding: '0 9px', borderRadius: 7, border: 'none', background: 'oklch(0.58 0.16 28)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                {removingId === row.recipe_ingredient_id ? '…' : 'Yes'}
+                              </button>
+                              <button type="button" onClick={() => setConfirmRemoveId(null)}
+                                style={{ height: 26, padding: '0 9px', borderRadius: 7, border: '1px solid #E7DFD4', background: '#fff', color: T.textSecond, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                No
+                              </button>
+                            </span>
+                          ) : (
+                            <button type="button" title={`Remove ${row.name} from recipe`} aria-label={`Remove ${row.name}`}
+                              onClick={() => setConfirmRemoveId(row.recipe_ingredient_id)}
+                              style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', color: T.textMuted, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'oklch(0.97 0.025 30)'; e.currentTarget.style.color = 'oklch(0.55 0.16 28)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.textMuted; }}>
+                              <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 5h10M6 5V3.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V5m1 0v7.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4.5 12.5V5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
+                  {addOpen && (() => {
+                    const inRecipe   = new Set(result.ingredient_breakdown.map(r => r.ingredient_id));
+                    const choices    = allIngredients.filter(i => !inRecipe.has(i.id));
+                    const selected   = allIngredients.find(i => String(i.id) === addForm.ingredient_id);
+                    const unit       = addForm.unit || selected?.unit || '';
+                    const factor     = selected ? getConversionFactor(unit, selected.unit) : null;
+                    const qty        = parseFloat(addForm.quantity);
+                    const fieldStyle = { height: 34, borderRadius: 9, border: '1px solid #E7DFD4', background: '#FDFBF8', padding: '0 10px', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
+                    return (
+                      <tr style={{ borderTop: '1px solid #F3EDE4', background: T.accentLight }}>
+                        <td colSpan={7} style={{ padding: '14px 22px' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+                            <div style={{ minWidth: 220, flex: '1 1 220px' }}>
+                              <div style={{ fontSize: 11.5, fontWeight: 600, color: T.textSecond, marginBottom: 5 }}>Ingredient</div>
+                              <Select
+                                value={addForm.ingredient_id}
+                                onChange={v => {
+                                  const ing = allIngredients.find(i => String(i.id) === v);
+                                  setAddForm(f => ({ ...f, ingredient_id: v, unit: ing?.unit || '' }));
+                                }}
+                                options={choices.map(i => ({ value: String(i.id), label: i.name }))}
+                                placeholder={choices.length ? 'Choose ingredient…' : 'All ingredients already added'}
+                                searchable
+                              />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 11.5, fontWeight: 600, color: T.textSecond, marginBottom: 5 }}>Quantity</div>
+                              <input type="number" min="0" step="any" placeholder="e.g. 250" value={addForm.quantity}
+                                onChange={e => setAddForm(f => ({ ...f, quantity: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddIngredient(); } }}
+                                style={{ ...fieldStyle, width: 110 }} />
+                            </div>
+                            <div style={{ width: 100 }}>
+                              <div style={{ fontSize: 11.5, fontWeight: 600, color: T.textSecond, marginBottom: 5 }}>Unit</div>
+                              <Select
+                                value={unit}
+                                onChange={v => setAddForm(f => ({ ...f, unit: v }))}
+                                options={(selected ? unitOptionsFor(selected.unit) : []).map(u => ({ value: u, label: u }))}
+                                placeholder="—"
+                                disabled={!selected}
+                              />
+                            </div>
+                            <button type="button" onClick={handleAddIngredient} disabled={addBusy}
+                              style={{ height: 34, padding: '0 16px', borderRadius: 9, border: 'none', background: T.accent, color: '#fff', fontSize: 13, fontWeight: 700, cursor: addBusy ? 'wait' : 'pointer', fontFamily: 'inherit', opacity: addBusy ? 0.7 : 1 }}>
+                              {addBusy ? 'Adding…' : 'Add & recompute'}
+                            </button>
+                            <button type="button" onClick={() => setAddOpen(false)}
+                              style={{ height: 34, padding: '0 12px', borderRadius: 9, border: '1px solid #E7DFD4', background: '#fff', color: T.textSecond, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              Cancel
+                            </button>
+                          </div>
+                          {selected && (
+                            <div style={{ fontSize: 12, color: T.textMuted, marginTop: 8 }}>
+                              {selected.name} is priced per {selected.unit}.
+                              {factor != null && factor !== 1 && qty > 0 && ` ${qty} ${unit} = ${Number((qty * factor).toFixed(4))} ${selected.unit}.`}
+                            </div>
+                          )}
+                          {addError && <div style={{ fontSize: 12.5, color: 'oklch(0.55 0.16 28)', marginTop: 8 }}>{addError}</div>}
+                        </td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>

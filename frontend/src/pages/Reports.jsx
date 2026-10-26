@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { loadPrefs } from '../lib/prefs';
 import Select from '../components/Select';
+import { RecipeThumb } from '../components/RecipePhoto';
 import { useToast } from '../components/Toast';
 
 const T = {
@@ -128,6 +129,7 @@ export default function Reports() {
       const merged = batchResults.map(r => ({
         recipe_id:            r.recipe_id,
         recipe_name:          r.recipe_name,
+        image_data:           rows.find(s => s.recipe_id === r.recipe_id)?.image_data ?? null,
         servings:             r.servings,
         output_id:            r.output_id,
         portion_cost:         r.portion_cost,
@@ -395,7 +397,10 @@ export default function Reports() {
                     return (
                       <tr key={row.recipe_id} style={{ background: rowBg }}>
                         <td style={tdStyle}>
-                          <span style={{ fontWeight: 600, color: T.textPrimary }}>{row.recipe_name}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, verticalAlign: 'middle' }}>
+                            <RecipeThumb src={row.image_data} name={row.recipe_name} size={26} radius={7} />
+                            <span style={{ fontWeight: 600, color: T.textPrimary }}>{row.recipe_name}</span>
+                          </span>
                           {row.has_missing_prices && (
                             <MissingBadge count={row.missing_count} />
                           )}

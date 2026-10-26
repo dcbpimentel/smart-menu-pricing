@@ -6,7 +6,7 @@ import Select from '../components/Select';
 import { SkeletonTable } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { formatCurrency } from '../lib/format';
-import { INGREDIENT_UNITS as UNITS } from '../lib/constants';
+import { INGREDIENT_UNITS as UNITS, MANUAL_PRICE_ORIGINS } from '../lib/constants';
 
 const fmtDate = (d) => {
   if (!d) return '—';
@@ -98,7 +98,7 @@ export default function Ingredients() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const [form, setForm]               = useState({ name: '', unit: 'kg', category: '', initPrice: '', initDate: '' });
+  const [form, setForm]               = useState({ name: '', unit: 'kg', category: '', initPrice: '', initDate: '', initOrigin: MANUAL_PRICE_ORIGINS[0] });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError]     = useState(null);
 
@@ -106,7 +106,7 @@ export default function Ingredients() {
   const [pricesLoading, setPricesLoading] = useState(false);
   const [pricesError, setPricesError]     = useState(null);
 
-  const [addForm, setAddForm]         = useState({ price: '', extraction_date: today });
+  const [addForm, setAddForm]         = useState({ price: '', extraction_date: today, origin: MANUAL_PRICE_ORIGINS[0] });
   const [addLoading, setAddLoading]   = useState(false);
   const [addError, setAddError]       = useState(null);
 
@@ -149,7 +149,7 @@ export default function Ingredients() {
   };
 
   const openAdd = () => {
-    setForm({ name: '', unit: 'kg', category: '', initPrice: '', initDate: today });
+    setForm({ name: '', unit: 'kg', category: '', initPrice: '', initDate: today, initOrigin: MANUAL_PRICE_ORIGINS[0] });
     setFormError(null);
     setAddIngOpen(true);
   };
@@ -168,6 +168,7 @@ export default function Ingredients() {
           ingredient_id: newId,
           price: parseFloat(form.initPrice),
           source: 'manual',
+          provenance_note: form.initOrigin,
           extraction_date: form.initDate || today,
           is_manual: true,
         });
@@ -190,7 +191,7 @@ export default function Ingredients() {
     setConfirmDelete(false);
     setPrices([]);
     setPricesError(null);
-    setAddForm({ price: '', extraction_date: today });
+    setAddForm({ price: '', extraction_date: today, origin: MANUAL_PRICE_ORIGINS[0] });
     setAddError(null);
     setForm({ name: ing.name, unit: ing.unit, category: ing.category ?? '' });
     setFormError(null);
@@ -207,6 +208,7 @@ export default function Ingredients() {
         ingredient_id:   detailIng.id,
         price:           parseFloat(addForm.price),
         source:          'manual',
+        provenance_note: addForm.origin,
         extraction_date: addForm.extraction_date,
         is_manual:       true,
       });
@@ -215,7 +217,7 @@ export default function Ingredients() {
         flagged[String(detailIng.id)] = Date.now();
         localStorage.setItem('smp_price_flagged', JSON.stringify(flagged));
       } catch {}
-      setAddForm({ price: '', extraction_date: today });
+      setAddForm({ price: '', extraction_date: today, origin: MANUAL_PRICE_ORIGINS[0] });
       fetchPrices(detailIng);
       fetchLatestPrices(ingredients);
       toast.success('Price saved');
@@ -488,6 +490,11 @@ export default function Ingredients() {
                     onFocus={focusStyle} onBlur={blurStyle}
                   />
                 </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 5 }}>Price source</label>
+                  <Select value={form.initOrigin} onChange={v => setForm(f => ({ ...f, initOrigin: v }))}
+                    options={MANUAL_PRICE_ORIGINS.map(o => ({ value: o, label: o }))} />
+                </div>
               </div>
             </div>
 
@@ -574,6 +581,11 @@ export default function Ingredients() {
                       onFocus={focusStyle} onBlur={blurStyle}
                     />
                   </div>
+                  <div style={{ flex: '1 1 160px' }}>
+                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 5 }}>Price source</label>
+                    <Select value={addForm.origin} onChange={v => setAddForm(f => ({ ...f, origin: v }))}
+                      options={MANUAL_PRICE_ORIGINS.map(o => ({ value: o, label: o }))} />
+                  </div>
                   <button type="submit" disabled={addLoading} className="btn-primary"
                     style={{ height: 40, padding: '0 16px', borderRadius: 10, fontSize: 13.5, whiteSpace: 'nowrap' }}>
                     {addLoading ? 'Saving…' : 'Save Price'}
@@ -617,6 +629,9 @@ export default function Ingredients() {
                              }}>
                                {p.source.toUpperCase()}
                              </span>
+                             {p.provenance_note && (
+                               <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3 }}>{p.provenance_note}</div>
+                             )}
                            </td>
                          </tr>
                        ))}

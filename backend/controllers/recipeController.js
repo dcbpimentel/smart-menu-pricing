@@ -1,4 +1,8 @@
 const db = require('../utils/db');
+const { unitsCompatible } = require('../utils/units');
+
+const unitError = (ingredientName, unit, baseUnit) =>
+  `Can't use "${unit}" for ${ingredientName}: it is priced per "${baseUnit}". Pick a unit that converts to ${baseUnit}.`;
 
 const getAllRecipes = async (req, res) => {
   try {
@@ -17,7 +21,7 @@ const getRecipeById = async (req, res) => {
     }
 
     const [ingredients] = await db.query(
-      `SELECT ri.id, ri.ingredient_id, i.name, ri.unit, ri.quantity, COALESCE(ri.waste_pct, 0) AS waste_pct
+      `SELECT ri.id, ri.ingredient_id, i.name, ri.unit, i.unit AS base_unit, ri.quantity, COALESCE(ri.waste_pct, 0) AS waste_pct
        FROM recipe_ingredients ri
        JOIN ingredients i ON i.id = ri.ingredient_id
        WHERE ri.recipe_id = ?
@@ -40,6 +44,7 @@ const getRecipeById = async (req, res) => {
           ingredient_id: r.ingredient_id,
           name: r.name,
           unit: r.unit,
+          base_unit: r.base_unit,
           quantity: parseFloat(r.quantity),
           waste_pct: parseFloat(r.waste_pct),
         })),
@@ -125,10 +130,13 @@ const addIngredientToRecipe = async (req, res) => {
 
     const [[recipes], [ingredients]] = await Promise.all([
       db.query('SELECT id FROM recipes WHERE id = ?', [recipe_id]),
-      db.query('SELECT id FROM ingredients WHERE id = ?', [ingredient_id]),
+      db.query('SELECT id, name, unit FROM ingredients WHERE id = ?', [ingredient_id]),
     ]);
     if (!recipes.length)     return res.status(404).json({ success: false, data: null, message: 'Recipe not found' });
     if (!ingredients.length) return res.status(404).json({ success: false, data: null, message: 'Ingredient not found' });
+    if (!unitsCompatible(unit, ingredients[0].unit)) {
+      return res.status(400).json({ success: false, data: null, message: unitError(ingredients[0].name, unit, ingredients[0].unit) });
+    }
 
     const [result] = await db.query(
       'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit, waste_pct) VALUES (?, ?, ?, ?, ?)',
@@ -147,6 +155,16 @@ const addIngredientToRecipe = async (req, res) => {
 const updateRecipeIngredient = async (req, res) => {
   try {
     const { quantity, unit, waste_pct } = req.body;
+    if (unit) {
+      const [[ing]] = await db.query(
+        `SELECT i.name, i.unit FROM recipe_ingredients ri JOIN ingredients i ON i.id = ri.ingredient_id
+         WHERE ri.id = ? AND ri.recipe_id = ?`,
+        [req.params.riId, req.params.id]
+      );
+      if (ing && !unitsCompatible(unit, ing.unit)) {
+        return res.status(400).json({ success: false, data: null, message: unitError(ing.name, unit, ing.unit) });
+      }
+    }
     const [result] = await db.query(
       `UPDATE recipe_ingredients
        SET quantity  = COALESCE(?, quantity),

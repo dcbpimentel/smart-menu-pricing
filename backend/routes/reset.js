@@ -11,19 +11,19 @@ router.post('/', async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    await conn.query('SET FOREIGN_KEY_CHECKS = 0');
-
-    await conn.query('TRUNCATE TABLE costing_outputs');
-    await conn.query('TRUNCATE TABLE recipe_ingredients');
-    await conn.query('TRUNCATE TABLE recipes');
-    await conn.query('TRUNCATE TABLE ingredient_prices');
-    await conn.query('TRUNCATE TABLE ingredients');
-    await conn.query('TRUNCATE TABLE pricing_settings');
+    // DELETE rather than TRUNCATE: TRUNCATE commits implicitly, so a failure halfway
+    // would leave one restaurant's data partly in place. Children are cleared first.
+    await conn.query('DELETE FROM inventory_transactions');
+    await conn.query('DELETE FROM ingredient_stock');
+    await conn.query('DELETE FROM costing_outputs');
+    await conn.query('DELETE FROM recipe_ingredients');
+    await conn.query('DELETE FROM recipes');
+    await conn.query('DELETE FROM ingredient_prices');
+    await conn.query('DELETE FROM ingredients');
+    await conn.query('DELETE FROM pricing_settings');
 
     // Remove non-admin users added during testing
     await conn.query("DELETE FROM users WHERE role != 'admin'");
-
-    await conn.query('SET FOREIGN_KEY_CHECKS = 1');
 
     // Re-seed 5 base ingredients
     const today = new Date().toISOString().slice(0, 10);
@@ -36,12 +36,15 @@ router.post('/', async (req, res) => {
         ('Garlic',         'kg', 'Vegetable')
     `);
 
+    // Sample prices so the system is usable right away; labeled so they are never
+    // mistaken for a restaurant's own records
+    const DEMO_NOTE = 'Sample price (demo data)';
     const prices = [
-      ['Rice',           52.00,  'NFA accredited rice retailer'],
-      ['Chicken Breast', 220.00, 'Local poultry farm gate price'],
-      ['Pork Belly',     280.00, 'Wet market pork section'],
-      ['Onion',          80.00,  'Divisoria vegetable stall'],
-      ['Garlic',         120.00, 'Divisoria vegetable stall'],
+      ['Rice',           52.00,  DEMO_NOTE],
+      ['Chicken Breast', 220.00, DEMO_NOTE],
+      ['Pork Belly',     280.00, DEMO_NOTE],
+      ['Onion',          80.00,  DEMO_NOTE],
+      ['Garlic',         120.00, DEMO_NOTE],
     ];
     for (const [name, price, note] of prices) {
       await conn.query(

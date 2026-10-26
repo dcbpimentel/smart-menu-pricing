@@ -6,6 +6,7 @@ import {
   FiSearch, FiArrowRight,
 } from 'react-icons/fi';
 import api from '../lib/api';
+import { RecipeThumb } from './RecipePhoto';
 
 const PAGES = [
   { label: 'Dashboard',        path: '/',            icon: FiHome },
@@ -56,7 +57,7 @@ export default function CommandPalette({ open, onClose }) {
       const recs = (rr.data.data || [])
         .filter(r => r.name.toLowerCase().includes(q))
         .slice(0, 4)
-        .map(r => ({ label: r.name, subtitle: `${r.servings} serving${r.servings !== 1 ? 's' : ''}`, path: `/recipes/${r.id}`, icon: FiBook, type: 'recipe' }));
+        .map(r => ({ label: r.name, subtitle: `${r.servings} serving${r.servings !== 1 ? 's' : ''}`, path: `/recipes/${r.id}`, icon: FiBook, type: 'recipe', image: r.image_data }));
       setResults([...pageHits, ...ings, ...recs]);
     });
   }, [query, open]);
@@ -143,7 +144,7 @@ export default function CommandPalette({ open, onClose }) {
                   transition: 'background 0.1s ease',
                 }}
               >
-                <div style={{
+                {item.image ? <RecipeThumb src={item.image} name={item.label} size={32} radius={8} /> : <div style={{
                   width: 32, height: 32, borderRadius: '8px', flexShrink: 0,
                   background: active ? 'var(--accent-light)' : 'var(--canvas-bg)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -151,7 +152,7 @@ export default function CommandPalette({ open, onClose }) {
                   transition: 'background 0.1s ease',
                 }}>
                   <Icon size={15} />
-                </div>
+                </div>}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     fontSize: '14px', fontWeight: 500, lineHeight: 1.3,

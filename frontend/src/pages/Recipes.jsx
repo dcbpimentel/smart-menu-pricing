@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiBook } from 'react-icons/fi';
 import api from '../lib/api';
+import { PhotoPicker } from '../components/RecipePhoto';
 import { SkeletonCards } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 
@@ -138,14 +139,6 @@ export default function Recipes() {
     setForm({ name: recipe.name, description: recipe.description || '', servings: String(recipe.servings), image: recipe.image_data || '', category: recipe.category || '' });
     setFormError('');
     setModalOpen(true);
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setForm(f => ({ ...f, image: ev.target.result }));
-    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -340,42 +333,7 @@ export default function Recipes() {
         <Modal onClose={() => setModalOpen(false)}>
           <ModalHeader title={editTarget ? 'Edit Recipe' : 'Add Recipe'} subtitle={editTarget ? `Editing "${editTarget.name}"` : 'Create a new menu item'} onClose={() => setModalOpen(false)} />
           <form onSubmit={handleSubmit} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
-            {/* Dish photo upload */}
-            <div>
-              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>Dish Photo</label>
-              <label style={{ display: 'block', cursor: 'pointer' }}>
-                <div style={{
-                  height: 120, borderRadius: 12, border: '1.5px dashed var(--input-border)',
-                  background: 'var(--input-bg)', overflow: 'hidden', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', position: 'relative',
-                  transition: 'border-color 0.15s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--input-border)'}
-                >
-                  {form.image ? (
-                    <img src={form.image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--text-ultra-muted)' }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="1.4"/>
-                        <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.4"/>
-                        <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>Click to upload photo</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-ultra-muted)' }}>JPG, PNG or WEBP</span>
-                    </div>
-                  )}
-                </div>
-                <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
-              </label>
-              {form.image && (
-                <button type="button" onClick={() => setForm(f => ({ ...f, image: '' }))}
-                  style={{ marginTop: 6, fontSize: 12, color: 'oklch(0.55 0.16 28)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, fontWeight: 600 }}>
-                  Remove photo
-                </button>
-              )}
-            </div>
+            <PhotoPicker value={form.image} onChange={image => setForm(f => ({ ...f, image }))} />
             <div>
               <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>Name <span style={{ color: 'oklch(0.60 0.14 28)' }}>*</span></label>
               <input type="text" required autoFocus placeholder="e.g. Chicken Adobo" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}

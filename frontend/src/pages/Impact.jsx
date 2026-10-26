@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import Select from '../components/Select';
+import { RecipeThumb } from '../components/RecipePhoto';
 import { SkeletonStats } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { formatCurrency, formatPct } from '../lib/format';
@@ -101,6 +102,25 @@ const styles = {
   },
 };
 
+// Current vs simulated: one colour and label each, used everywhere on this page
+const CUR = { label: 'Current',   fg: '#6B625A', bg: '#F1ECE5', border: '#DCD2C4', bar: '#C8BEAF' };
+const SIM = { label: 'Simulated', fg: 'oklch(0.50 0.13 55)', bg: 'oklch(0.97 0.035 70)', border: 'oklch(0.85 0.08 65)', bar: 'oklch(0.70 0.14 60)' };
+
+function PriceTag({ kind, children }) {
+  const k = kind === 'sim' ? SIM : CUR;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      fontSize: 10.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+      padding: '2px 8px', borderRadius: 20, color: k.fg, background: k.bg, border: `1px solid ${k.border}`,
+      whiteSpace: 'nowrap',
+    }}>
+      <span style={{ width: 7, height: 7, borderRadius: 99, background: kind === 'sim' ? SIM.bar : CUR.bar }} />
+      {children ?? k.label}
+    </span>
+  );
+}
+
 function riseInStyle(delay = 0) {
   return {
     animation: `riseIn 420ms cubic-bezier(0.22,1,0.36,1) ${delay}ms both`,
@@ -157,9 +177,10 @@ function OldPriceInput({ value, onChange }) {
         width: 130,
         height: 40,
         borderRadius: 11,
-        border: `1px solid ${focused ? T.accent : T.inputBorder}`,
-        background: focused ? '#FFFFFF' : T.inputBg,
-        boxShadow: focused ? T.focusShadow : 'none',
+        border: `1px solid ${focused ? CUR.fg : CUR.border}`,
+        background: focused ? '#FFFFFF' : CUR.bg,
+        boxShadow: focused ? '0 0 0 4px #EFE8DE' : 'none',
+        color: CUR.fg,
         fontSize: 14,
         fontVariantNumeric: 'tabular-nums',
         padding: '0 10px',
@@ -187,9 +208,10 @@ function NewPriceInput({ value, onChange }) {
         width: 130,
         height: 40,
         borderRadius: 11,
-        border: `1px solid ${focused ? T.amberFocusBorder : T.amberBorder}`,
-        background: focused ? '#FFFFFF' : T.amberBg,
-        boxShadow: focused ? T.amberFocus : 'none',
+        border: `1.5px solid ${focused ? SIM.fg : SIM.border}`,
+        background: focused ? '#FFFFFF' : SIM.bg,
+        boxShadow: focused ? '0 0 0 4px oklch(0.95 0.04 70)' : 'none',
+        color: SIM.fg,
         fontSize: 14,
         fontWeight: 600,
         fontVariantNumeric: 'tabular-nums',
@@ -240,8 +262,8 @@ function IngredientCostChart({ impacts }) {
           <YAxis tickFormatter={(v) => `₱${v}`} tick={{ fontSize: 11, fill: '#8C837B', fontFamily: 'inherit' }} axisLine={false} tickLine={false} width={52} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(76,93,62,0.05)' }} />
           <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'inherit', paddingTop: 8 }} />
-          <Bar dataKey="Current" fill="#C8BEAF" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="Simulated" fill="#4C5D3E" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Current" fill={CUR.bar} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Simulated" fill={SIM.bar} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -344,14 +366,17 @@ function DiffStatCards({ result }) {
       pct:  result.diff?.recommended_price_pct,
     },
     {
-      label: 'Margin Impact',
-      sub: 'Price vs cost',
-      old: null,
-      new: null,
-      diff: result.diff?.recommended_price_change != null && result.diff?.portion_cost_change != null
-        ? parseFloat((result.diff.recommended_price_change - result.diff.portion_cost_change).toFixed(2))
-        : null,
-      pct: null,
+      label: 'Contribution Margin',
+      // CM = selling price − portion cost; uses the saved menu price when there is one
+      sub: result.selling_price_basis === 'menu_price'
+        ? `Menu price ${formatCurrency(result.menu_price)} − portion cost`
+        : 'Suggested price − portion cost',
+      old: result.old?.contribution_margin,
+      new: result.new?.contribution_margin,
+      diff: result.diff?.contribution_margin_change,
+      pct:  result.diff?.contribution_margin_pct,
+      // A margin going up is good, unlike costs and prices
+      higherIsBetter: true,
     },
   ];
 
@@ -364,7 +389,8 @@ function DiffStatCards({ result }) {
       {cards.map((c, i) => {
         const up   = c.diff != null && c.diff > 0;
         const zero = c.diff == null || c.diff === 0;
-        const valueColor = zero ? T.accent : up ? 'oklch(0.58 0.16 28)' : T.accent;
+        const bad  = c.higherIsBetter ? !up : up;
+        const valueColor = zero ? T.accent : bad ? 'oklch(0.58 0.16 28)' : T.accent;
         return (
           <div key={i} className="card-spring" style={{
             '--i': i,
@@ -395,6 +421,14 @@ function DiffStatCards({ result }) {
             {c.pct != null && c.diff !== 0 && (
               <div style={{ fontSize: 12, color: valueColor, marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
                 {c.diff >= 0 ? '+' : ''}{formatPct(c.pct)}
+              </div>
+            )}
+            {(c.old != null || c.new != null) && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'center', gap: '6px 10px', marginTop: 12, paddingTop: 10, borderTop: '1px solid #F3EDE4' }}>
+                <PriceTag kind="cur" />
+                <span style={{ fontSize: 13.5, color: CUR.fg, fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{formatCurrency(c.old)}</span>
+                <PriceTag kind="sim" />
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: SIM.fg, fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{formatCurrency(c.new)}</span>
               </div>
             )}
           </div>
@@ -434,9 +468,9 @@ function IngredientImpactTable({ impacts }) {
               {[
                 { label: 'Ingredient', align: 'left',  first: true },
                 { label: 'Qty',        align: 'right' },
-                { label: 'Current Cost', align: 'right' },
+                { label: <PriceTag kind="cur">Current Cost</PriceTag>, align: 'right' },
                 { label: '',             align: 'center', width: 32 },
-                { label: 'Simulated Cost', align: 'right' },
+                { label: <PriceTag kind="sim">Simulated Cost</PriceTag>, align: 'right' },
                 { label: 'Change',     align: 'right' },
                 { label: '% Change',   align: 'right', last: true },
               ].map((h, i) => (
@@ -485,13 +519,13 @@ function IngredientImpactTable({ impacts }) {
                   <td style={{ ...styles.td, textAlign: 'right', color: T.textMuted, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
                     {row.quantity} {row.unit}
                   </td>
-                  <td style={{ ...styles.td, textAlign: 'right', color: T.textSecond, fontVariantNumeric: 'tabular-nums', fontSize: 13.5 }}>
+                  <td style={{ ...styles.td, textAlign: 'right', color: CUR.fg, fontVariantNumeric: 'tabular-nums', fontSize: 13.5 }}>
                     {formatCurrency(row.ingredient_cost_old)}
                   </td>
                   <td style={{ ...styles.td, textAlign: 'center' }}>
                     <ArrowRight color={changed ? (up ? 'oklch(0.58 0.16 28)' : T.accent) : '#D5CCBF'} />
                   </td>
-                  <td style={{ ...styles.td, textAlign: 'right', color: T.textPrimary, fontWeight: 600, fontVariantNumeric: 'tabular-nums', fontSize: 13.5 }}>
+                  <td style={{ ...styles.td, textAlign: 'right', color: SIM.fg, background: SIM.bg, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 13.5 }}>
                     {formatCurrency(row.ingredient_cost_new)}
                   </td>
                   <td style={{ ...styles.td, textAlign: 'right' }}>
@@ -716,13 +750,16 @@ export default function Impact() {
           {/* Recipe selector */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7, minWidth: 280 }}>
             <label style={{ fontSize: 12.5, fontWeight: 600, color: T.textSecond }}>Recipe</label>
-            <Select
-              value={recipeId}
-              onChange={setRecipeId}
-              options={recipes.map(r => ({ value: String(r.id), label: r.name }))}
-              placeholder="Select recipe…"
-              style={{ minWidth: 280 }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <RecipeThumb src={recipes.find(r => String(r.id) === recipeId)?.image_data} name={recipes.find(r => String(r.id) === recipeId)?.name} size={38} radius={10} />
+              <Select
+                value={recipeId}
+                onChange={setRecipeId}
+                options={recipes.map(r => ({ value: String(r.id), label: r.name }))}
+                placeholder="Select recipe…"
+                style={{ minWidth: 280 }}
+              />
+            </div>
           </div>
 
           {/* Pricing profile + Run button */}
@@ -780,9 +817,10 @@ export default function Impact() {
               fontSize: 12.5,
               color: T.textMuted,
             }}>
-              Inputs are pre-filled with the latest recorded price. Edit the{' '}
-              <span style={{ fontWeight: 600, color: T.textSecond }}>Simulated Price</span>{' '}
-              column to test how a price change affects your dish cost.
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <PriceTag kind="cur" /> is the latest recorded price (your baseline).
+                <PriceTag kind="sim" /> is the what-if price. Change it to test a supplier price change.
+              </span>
             </div>
             {analyzeError && (
               <div style={{ padding: '10px 22px', fontSize: 13, color: 'oklch(0.58 0.16 28)', borderBottom: T.rowDivider }}>
@@ -790,14 +828,15 @@ export default function Impact() {
               </div>
             )}
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
                 <thead>
                   <tr>
                     {[
                       { label: 'Ingredient', align: 'left',  first: true },
-                      { label: 'Unit',       align: 'left' },
-                      { label: 'Current Price (₱)', align: 'left' },
-                      { label: 'Simulated Price (₱)', align: 'left', last: true },
+                      { label: 'Priced Per', align: 'left' },
+                      { label: <PriceTag kind="cur">Current Price (₱)</PriceTag>, align: 'left' },
+                      { label: <PriceTag kind="sim">Simulated Price (₱)</PriceTag>, align: 'left' },
+                      { label: 'Change', align: 'right', last: true },
                     ].map((h, i) => (
                       <th key={i} style={{
                         ...styles.thCell,
@@ -811,11 +850,16 @@ export default function Impact() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recipeIngredients.map((ri, i) => (
+                  {recipeIngredients.map((ri, i) => {
+                    const o = parseFloat(prices[ri.ingredient_id]?.old);
+                    const n = parseFloat(prices[ri.ingredient_id]?.new);
+                    const delta = !isNaN(o) && !isNaN(n) ? parseFloat((n - o).toFixed(2)) : null;
+                    const edited = delta != null && delta !== 0;
+                    return (
                     <tr
                       key={ri.ingredient_id}
                       className="row-interactive"
-                      style={{ borderTop: i === 0 ? 'none' : T.rowDivider, transition: 'background 0.1s, transform 0.1s ease' }}
+                      style={{ borderTop: i === 0 ? 'none' : T.rowDivider, transition: 'background 0.1s, transform 0.1s ease', boxShadow: edited ? `inset 3px 0 0 ${SIM.bar}` : 'none' }}
                       onMouseEnter={e => e.currentTarget.style.background = T.rowHover}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
@@ -832,7 +876,7 @@ export default function Impact() {
                           borderRadius: 8,
                           fontFamily: 'monospace',
                         }}>
-                          {ri.unit}
+                          {ri.base_unit || ri.unit}
                         </span>
                       </td>
                       <td style={{ ...styles.td }}>
@@ -841,14 +885,25 @@ export default function Impact() {
                           onChange={v => setPrice(ri.ingredient_id, 'old', v)}
                         />
                       </td>
-                      <td style={{ ...styles.tdLast }}>
+                      <td style={{ ...styles.td }}>
                         <NewPriceInput
                           value={prices[ri.ingredient_id]?.new ?? ''}
                           onChange={v => setPrice(ri.ingredient_id, 'new', v)}
                         />
                       </td>
+                      <td style={{ ...styles.tdLast, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {edited ? (
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: delta > 0 ? 'oklch(0.58 0.16 28)' : T.accent, fontVariantNumeric: 'tabular-nums' }}>
+                            {delta > 0 ? '+' : ''}{formatCurrency(delta)}
+                            {o > 0 && <span style={{ fontWeight: 600, marginLeft: 5, opacity: 0.8 }}>({delta > 0 ? '+' : ''}{((delta / o) * 100).toFixed(1)}%)</span>}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, color: T.textMuted }}>No change</span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

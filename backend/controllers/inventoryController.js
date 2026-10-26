@@ -1,4 +1,5 @@
 const db = require('../utils/db');
+const { getConversionFactor } = require('../utils/units');
 
 // GET /api/inventory
 const getInventory = async (req, res) => {
@@ -147,7 +148,7 @@ const useRecipe = async (req, res) => {
     if (!recipe_id) return res.status(400).json({ success: false, data: null, message: 'recipe_id is required' });
 
     const [recipeIngredients] = await db.query(
-      `SELECT ri.ingredient_id, ri.quantity, ri.unit, ri.waste_pct, i.name
+      `SELECT ri.ingredient_id, ri.quantity, ri.unit, ri.waste_pct, i.name, i.unit AS base_unit
        FROM recipe_ingredients ri
        JOIN ingredients i ON i.id = ri.ingredient_id
        WHERE ri.recipe_id = ?`,
@@ -163,19 +164,24 @@ const useRecipe = async (req, res) => {
 
     for (const ri of recipeIngredients) {
       const effQty      = ri.waste_pct > 0 ? ri.quantity / (1 - ri.waste_pct / 100) : ri.quantity;
-      const totalDeduct = parseFloat((effQty * batchCount).toFixed(4));
+      // Stock is kept in the ingredient's base unit, so convert recipe quantities (e.g. g → kg)
+      const factor      = getConversionFactor(ri.unit, ri.base_unit);
+      if (factor === null) {
+        return res.status(400).json({ success: false, data: null, message: `Cannot convert "${ri.unit}" to "${ri.base_unit}" for ${ri.name}` });
+      }
+      const totalDeduct = parseFloat((effQty * factor * batchCount).toFixed(4));
 
       await db.query(
         `INSERT INTO inventory_transactions (ingredient_id, type, quantity, unit, recipe_id, batches, notes, transaction_date) VALUES (?, 'usage', ?, ?, ?, ?, 'Recipe batch', ?)`,
-        [ri.ingredient_id, -totalDeduct, ri.unit, recipe_id, batchCount, date]
+        [ri.ingredient_id, -totalDeduct, ri.base_unit, recipe_id, batchCount, date]
       );
       await db.query(
         `INSERT INTO ingredient_stock (ingredient_id, quantity, unit) VALUES (?, GREATEST(0, -?), ?)
          ON DUPLICATE KEY UPDATE quantity = GREATEST(0, quantity - ?)`,
-        [ri.ingredient_id, totalDeduct, ri.unit, totalDeduct]
+        [ri.ingredient_id, totalDeduct, ri.base_unit, totalDeduct]
       );
 
-      deductions.push({ ingredient_id: ri.ingredient_id, name: ri.name, deducted: totalDeduct, unit: ri.unit });
+      deductions.push({ ingredient_id: ri.ingredient_id, name: ri.name, deducted: totalDeduct, unit: ri.base_unit });
     }
 
     res.json({ success: true, data: { deductions, batches: batchCount }, message: `Stock updated for ${batchCount} batch${batchCount !== 1 ? 'es' : ''}` });
