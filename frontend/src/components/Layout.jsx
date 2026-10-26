@@ -73,13 +73,16 @@ function initials(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const MOBILE_QUERY = '(max-width: 767px)';
+
 export default function Layout() {
   const location = useLocation();
   const user     = getUser();
 
   const [collapsed,   setCollapsed]   = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
-  const [isMobile,    setIsMobile]    = useState(false);
+  // Read the screen size on the first render so phones don't flash the desktop sidebar
+  const [isMobile,    setIsMobile]    = useState(() => window.matchMedia(MOBILE_QUERY).matches);
   const [topbarRight, setTopbarRight] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -108,7 +111,7 @@ export default function Layout() {
   }, []);
 
   useEffect(() => {
-    const mq     = window.matchMedia('(max-width: 767px)');
+    const mq     = window.matchMedia(MOBILE_QUERY);
     const update = (matches) => { setIsMobile(matches); if (matches) setMobileOpen(false); };
     update(mq.matches);
     const handler = (e) => update(e.matches);
@@ -119,6 +122,12 @@ export default function Layout() {
   useEffect(() => {
     if (isMobile) setMobileOpen(false);
   }, [location.pathname, isMobile]);
+
+  // Lets fixed elements outside this component (the floating calculator) step aside
+  useEffect(() => {
+    document.body.classList.toggle('mobile-menu-open', isMobile && mobileOpen);
+    return () => document.body.classList.remove('mobile-menu-open');
+  }, [isMobile, mobileOpen]);
 
   const pageMeta = PAGE_META[location.pathname]
     ?? (/^\/recipes\/\d+/.test(location.pathname)
@@ -217,7 +226,7 @@ export default function Layout() {
       </nav>
 
       {/* Profile card — click to go to profile page */}
-      <div style={{ borderTop: '1px solid var(--divider)', padding: '10px 8px 14px', flexShrink: 0 }}>
+      <div style={{ borderTop: '1px solid var(--divider)', padding: '10px 8px calc(14px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
         <Link
           to="/profile"
           title={iconOnly ? 'Profile settings' : undefined}
@@ -266,7 +275,7 @@ export default function Layout() {
     <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     {/* Paper grain texture — gives premium editorial feel */}
     <div className="grain-overlay" aria-hidden="true" />
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--canvas-bg)' }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--canvas-bg)' }}>
 
       {/* Mobile backdrop */}
       {isMobile && mobileOpen && (
@@ -296,7 +305,7 @@ export default function Layout() {
           boxShadow: 'inset 3px 0 0 #4C5D3E',
           display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
           ...(isMobile ? {
-            position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 40, width: '268px',
+            position: 'fixed', top: 0, left: 0, height: '100dvh', zIndex: 40, width: '268px', maxWidth: '85vw',
             transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             boxShadow: mobileOpen ? '8px 0 32px rgba(0,0,0,0.12)' : 'none',
@@ -447,7 +456,7 @@ export default function Layout() {
 
       {/* Mobile bottom nav */}
       {isMobile && (
-        <nav className="mobile-bottom-nav">
+        <nav className={`mobile-bottom-nav${mobileOpen ? ' mobile-bottom-nav--hidden' : ''}`} aria-hidden={mobileOpen}>
           {NAV_ITEMS.slice(0, 6).map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}

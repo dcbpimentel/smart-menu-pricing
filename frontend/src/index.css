@@ -367,7 +367,8 @@ button:disabled {
 .mobile-bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: 64px;
+  box-sizing: border-box;
+  height: calc(64px + env(safe-area-inset-bottom, 0px));
   background: var(--sidebar-bg);
   border-top: 1px solid var(--border);
   display: flex;
@@ -377,6 +378,39 @@ button:disabled {
   z-index: 50;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+/* Slides away while the side menu is open so it can't cover the menu */
+.mobile-bottom-nav--hidden {
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* Impact Analysis result cards: 2 columns, 1 on narrow phones */
+.impact-diff-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 560px) {
+  .impact-diff-grid { grid-template-columns: 1fr; }
+}
+
+/* Floating calculator on phones: sit above the bottom nav, hide behind the open menu */
+@media (max-width: 767px) {
+  .calc-fab {
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+  }
+  .calc-panel {
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+    max-width: calc(100vw - 32px);
+  }
+}
+.mobile-menu-open .calc-fab,
+.mobile-menu-open .calc-panel {
+  display: none !important;
 }
 .mobile-nav-item {
   display: flex;

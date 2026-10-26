@@ -573,17 +573,17 @@ function PricingProfilesSection() {
             <div
               key={profile.id}
               style={{
-                display: 'flex', alignItems: 'center',
+                display: 'flex', alignItems: 'center', flexWrap: 'wrap',
                 padding: '14px 18px',
                 borderBottom: i < profiles.length - 1 ? `1px solid ${T.rowBorder}` : 'none',
-                gap: 12,
+                gap: '8px 12px',
               }}
             >
               {/* Color swatch */}
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: T.accent, flexShrink: 0 }} />
 
               {/* Name */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: '1 1 110px', minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.textPrimary }}>{profile.label}</div>
               </div>
 
@@ -956,24 +956,30 @@ const SETTINGS_CSS = `
   background: rgba(0,0,0,0.06);
   margin: 6px 4px;
 }
-/* ── Mobile: horizontal tab strip ── */
-@media (max-width: 700px) {
-  .smp-settings { flex-direction: column; min-height: unset; }
+/* ── Mobile: section buttons wrap onto rows so every section is visible ── */
+@media (max-width: 767px) {
+  .smp-settings { flex-direction: column; align-items: stretch; min-height: unset; }
   .smp-nav {
     width: 100%;
     flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
+    flex-wrap: wrap;
+    overflow: visible;
     position: static;
     max-height: none;
     padding-right: 0;
-    padding-bottom: 2px;
-    gap: 4px;
+    padding-bottom: 14px;
+    gap: 6px;
     border-bottom: 1px solid rgba(0,0,0,0.06);
-    margin-bottom: 20px;
+    margin-bottom: 18px;
+  }
+  .smp-nav > button {
+    width: auto !important;
+    padding: 6px 11px 6px 6px !important;
+    border: 1px solid rgba(0,0,0,0.07) !important;
   }
   .smp-nav-divider { display: none; }
   .smp-panel {
+    width: 100%;
     padding-left: 0;
     border-left: none;
   }

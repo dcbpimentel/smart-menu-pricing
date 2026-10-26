@@ -378,11 +378,7 @@ function DiffStatCards({ result }) {
   ];
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: 10,
-    }}>
+    <div className="impact-diff-grid">
       {cards.map((c, i) => {
         const up   = c.diff != null && c.diff > 0;
         const zero = c.diff == null || c.diff === 0;

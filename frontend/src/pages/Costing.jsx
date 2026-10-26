@@ -835,9 +835,11 @@ export default function Costing() {
                   }}>
                     {formatCurrency(result.raw_price)} before rounding
                     {' · '}
-                    {result.pricing_setting?.rounding_rule === 'nearest5' ? 'rounded up to ₱5'
-                      : result.pricing_setting?.rounding_rule === 'nearest10' ? 'rounded up to ₱10'
-                      : 'no rounding'}
+                    <span style={{ whiteSpace: 'nowrap' }}>
+                      {result.pricing_setting?.rounding_rule === 'nearest5' ? 'rounded up to ₱5'
+                        : result.pricing_setting?.rounding_rule === 'nearest10' ? 'rounded up to ₱10'
+                        : 'no rounding'}
+                    </span>
                   </span>
                 )}
               </div>

@@ -277,7 +277,7 @@ export default function FloatingCalculator() {
 
       {/* Calculator panel */}
       {open && (
-        <div ref={panelRef} style={panelStyle} role="dialog" aria-label="Calculator">
+        <div ref={panelRef} className="calc-panel" style={panelStyle} role="dialog" aria-label="Calculator">
 
           {/* Display */}
           <div style={{
@@ -402,7 +402,7 @@ export default function FloatingCalculator() {
       {/* Floating toggle button */}
       <button
         ref={btnRef}
-        className="fc-toggle"
+        className="fc-toggle calc-fab"
         onClick={toggleCalc}
         onMouseEnter={() => setBtnHovered(true)}
         onMouseLeave={() => setBtnHovered(false)}
