@@ -1,0 +1,1574 @@
+{
+  "description": "Computation correctness test cases (paper Section 3.5.2): 20 researcher-prepared recipe cases x 3 values = 60 computations. Expected values are the manual gold standard, computed independently of the system with exact decimal arithmetic.",
+  "tolerance_php": 0.01,
+  "price_source": "manual",
+  "price_date": "2026-10-30",
+  "conversion_factors": {
+    "kg->kg": 1.0,
+    "g->kg": 0.001,
+    "lb->kg": 0.453592,
+    "oz->kg": 0.0283495,
+    "L->L": 1.0,
+    "ml->L": 0.001,
+    "tbsp->L": 0.0147868,
+    "tsp->L": 0.00492892,
+    "cup->L": 0.236588,
+    "pc->pc": 1.0
+  },
+  "pricing_profiles": [
+    {
+      "label": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5"
+    },
+    {
+      "label": "TC 30% no rounding",
+      "target_food_cost_pct": 30.0,
+      "rounding_rule": "none"
+    },
+    {
+      "label": "TC 40% round up P10",
+      "target_food_cost_pct": 40.0,
+      "rounding_rule": "nearest10"
+    },
+    {
+      "label": "TC 28% round up P5",
+      "target_food_cost_pct": 28.0,
+      "rounding_rule": "nearest5"
+    }
+  ],
+  "ingredients": [
+    {
+      "name": "TC Chicken (whole, dressed)",
+      "unit": "kg",
+      "price": 170.0,
+      "category": "Meat"
+    },
+    {
+      "name": "TC Pork Kasim",
+      "unit": "kg",
+      "price": 309.2,
+      "category": "Meat"
+    },
+    {
+      "name": "TC Pork Belly (Liempo)",
+      "unit": "kg",
+      "price": 366.66,
+      "category": "Meat"
+    },
+    {
+      "name": "TC Ground Pork",
+      "unit": "kg",
+      "price": 320.0,
+      "category": "Meat"
+    },
+    {
+      "name": "TC Beef Rump",
+      "unit": "kg",
+      "price": 502.18,
+      "category": "Meat"
+    },
+    {
+      "name": "TC Bangus",
+      "unit": "kg",
+      "price": 245.11,
+      "category": "Fish"
+    },
+    {
+      "name": "TC Chicken Egg",
+      "unit": "pc",
+      "price": 8.25,
+      "category": "Poultry"
+    },
+    {
+      "name": "TC Rice (well-milled)",
+      "unit": "kg",
+      "price": 54.12,
+      "category": "Grain"
+    },
+    {
+      "name": "TC Canton Noodles",
+      "unit": "kg",
+      "price": 140.0,
+      "category": "Grain"
+    },
+    {
+      "name": "TC Misua",
+      "unit": "kg",
+      "price": 180.0,
+      "category": "Grain"
+    },
+    {
+      "name": "TC Lumpia Wrapper",
+      "unit": "pc",
+      "price": 1.2,
+      "category": "Grain"
+    },
+    {
+      "name": "TC Garlic",
+      "unit": "kg",
+      "price": 130.0,
+      "category": "Spice"
+    },
+    {
+      "name": "TC Onion (red)",
+      "unit": "kg",
+      "price": 123.61,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Tomato",
+      "unit": "kg",
+      "price": 106.37,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Eggplant",
+      "unit": "kg",
+      "price": 83.37,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Ampalaya",
+      "unit": "kg",
+      "price": 113.84,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Carrots",
+      "unit": "kg",
+      "price": 119.31,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Cabbage",
+      "unit": "kg",
+      "price": 147.48,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Kangkong (bundle)",
+      "unit": "pc",
+      "price": 15.0,
+      "category": "Vegetable"
+    },
+    {
+      "name": "TC Lemongrass",
+      "unit": "kg",
+      "price": 60.0,
+      "category": "Spice"
+    },
+    {
+      "name": "TC Calamansi",
+      "unit": "kg",
+      "price": 95.4,
+      "category": "Fruit"
+    },
+    {
+      "name": "TC Green Mango",
+      "unit": "kg",
+      "price": 255.71,
+      "category": "Fruit"
+    },
+    {
+      "name": "TC Chili (red)",
+      "unit": "kg",
+      "price": 290.66,
+      "category": "Spice"
+    },
+    {
+      "name": "TC Black Peppercorn",
+      "unit": "kg",
+      "price": 600.0,
+      "category": "Spice"
+    },
+    {
+      "name": "TC Bay Leaf",
+      "unit": "pc",
+      "price": 0.5,
+      "category": "Spice"
+    },
+    {
+      "name": "TC Salt (iodized)",
+      "unit": "kg",
+      "price": 43.0,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Sugar (refined)",
+      "unit": "kg",
+      "price": 81.49,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Brown Sugar",
+      "unit": "kg",
+      "price": 72.17,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Soy Sauce",
+      "unit": "L",
+      "price": 62.0,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC White Vinegar",
+      "unit": "L",
+      "price": 45.0,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Cooking Oil (palm)",
+      "unit": "L",
+      "price": 101.91,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Annatto Oil",
+      "unit": "L",
+      "price": 180.0,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Mayonnaise",
+      "unit": "L",
+      "price": 220.0,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Ketchup",
+      "unit": "kg",
+      "price": 150.0,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Sinigang Mix (pack)",
+      "unit": "pc",
+      "price": 24.5,
+      "category": "Condiment"
+    },
+    {
+      "name": "TC Corned Beef (150 g can)",
+      "unit": "pc",
+      "price": 34.0,
+      "category": "Canned"
+    },
+    {
+      "name": "TC Sardines (155 g can)",
+      "unit": "pc",
+      "price": 21.5,
+      "category": "Canned"
+    },
+    {
+      "name": "TC Evaporated Milk",
+      "unit": "L",
+      "price": 129.73,
+      "category": "Dairy"
+    },
+    {
+      "name": "TC Drinking Water",
+      "unit": "L",
+      "price": 16.5,
+      "category": "Beverage"
+    },
+    {
+      "name": "TC Ice",
+      "unit": "kg",
+      "price": 10.0,
+      "category": "Beverage"
+    }
+  ],
+  "cases": [
+    {
+      "code": "TC01",
+      "purpose": "Mixed units: kg, ml, g, pc and tbsp to L",
+      "recipe_name": "TC01 Chicken Adobo",
+      "servings": 4,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Chicken (whole, dressed)",
+          "quantity": 1.0,
+          "unit": "kg",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 170.0,
+          "factor": 1.0,
+          "cost_exact": 170.0
+        },
+        {
+          "ingredient": "TC Soy Sauce",
+          "quantity": 120.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 62.0,
+          "factor": 0.001,
+          "cost_exact": 7.44
+        },
+        {
+          "ingredient": "TC White Vinegar",
+          "quantity": 100.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 45.0,
+          "factor": 0.001,
+          "cost_exact": 4.5
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 30.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 3.9
+        },
+        {
+          "ingredient": "TC Bay Leaf",
+          "quantity": 3.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 0.5,
+          "factor": 1.0,
+          "cost_exact": 1.5
+        },
+        {
+          "ingredient": "TC Black Peppercorn",
+          "quantity": 5.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 600.0,
+          "factor": 0.001,
+          "cost_exact": 3.0
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 2.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.0147868,
+          "cost_exact": 3.013845576
+        }
+      ],
+      "expected": {
+        "recipe_cost": 193.35,
+        "portion_cost": 48.34,
+        "raw_price": 138.1099,
+        "recommended_price": 140.0
+      }
+    },
+    {
+      "code": "TC02",
+      "purpose": "Waste percentage (10%) on the main ingredient",
+      "recipe_name": "TC02 Chicken Inasal",
+      "servings": 6,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Chicken (whole, dressed)",
+          "quantity": 1.5,
+          "unit": "kg",
+          "waste_pct": 10,
+          "base_unit": "kg",
+          "unit_price": 170.0,
+          "factor": 1.0,
+          "cost_exact": 283.3333333333333
+        },
+        {
+          "ingredient": "TC Lemongrass",
+          "quantity": 100.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 60.0,
+          "factor": 0.001,
+          "cost_exact": 6.0
+        },
+        {
+          "ingredient": "TC Calamansi",
+          "quantity": 150.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 95.4,
+          "factor": 0.001,
+          "cost_exact": 14.31
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 40.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 5.2
+        },
+        {
+          "ingredient": "TC Annatto Oil",
+          "quantity": 60.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 180.0,
+          "factor": 0.001,
+          "cost_exact": 10.8
+        },
+        {
+          "ingredient": "TC Salt (iodized)",
+          "quantity": 10.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 43.0,
+          "factor": 0.001,
+          "cost_exact": 0.43
+        }
+      ],
+      "expected": {
+        "recipe_cost": 320.07,
+        "portion_cost": 53.35,
+        "raw_price": 152.4159,
+        "recommended_price": 155.0
+      }
+    },
+    {
+      "code": "TC03",
+      "purpose": "Count units (pc) with no rounding rule",
+      "recipe_name": "TC03 Pork Sinigang",
+      "servings": 5,
+      "pricing_profile": "TC 30% no rounding",
+      "target_food_cost_pct": 30.0,
+      "rounding_rule": "none",
+      "ingredients": [
+        {
+          "ingredient": "TC Pork Kasim",
+          "quantity": 1.0,
+          "unit": "kg",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 309.2,
+          "factor": 1.0,
+          "cost_exact": 309.2
+        },
+        {
+          "ingredient": "TC Tomato",
+          "quantity": 250.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 106.37,
+          "factor": 0.001,
+          "cost_exact": 26.5925
+        },
+        {
+          "ingredient": "TC Onion (red)",
+          "quantity": 150.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 123.61,
+          "factor": 0.001,
+          "cost_exact": 18.5415
+        },
+        {
+          "ingredient": "TC Sinigang Mix (pack)",
+          "quantity": 2.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 24.5,
+          "factor": 1.0,
+          "cost_exact": 49.0
+        },
+        {
+          "ingredient": "TC Kangkong (bundle)",
+          "quantity": 2.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 15.0,
+          "factor": 1.0,
+          "cost_exact": 30.0
+        },
+        {
+          "ingredient": "TC Salt (iodized)",
+          "quantity": 8.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 43.0,
+          "factor": 0.001,
+          "cost_exact": 0.344
+        }
+      ],
+      "expected": {
+        "recipe_cost": 433.68,
+        "portion_cost": 86.74,
+        "raw_price": 289.1187,
+        "recommended_price": 289.12
+      }
+    },
+    {
+      "code": "TC04",
+      "purpose": "Round up to next P10 on a low-cost item",
+      "recipe_name": "TC04 Garlic Fried Rice",
+      "servings": 8,
+      "pricing_profile": "TC 40% round up P10",
+      "target_food_cost_pct": 40.0,
+      "rounding_rule": "nearest10",
+      "ingredients": [
+        {
+          "ingredient": "TC Rice (well-milled)",
+          "quantity": 1.0,
+          "unit": "kg",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 54.12,
+          "factor": 1.0,
+          "cost_exact": 54.12
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 50.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 6.5
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 3.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.0147868,
+          "cost_exact": 4.520768364
+        },
+        {
+          "ingredient": "TC Salt (iodized)",
+          "quantity": 5.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 43.0,
+          "factor": 0.001,
+          "cost_exact": 0.215
+        }
+      ],
+      "expected": {
+        "recipe_cost": 65.36,
+        "portion_cost": 8.17,
+        "raw_price": 20.4237,
+        "recommended_price": 30.0
+      }
+    },
+    {
+      "code": "TC05",
+      "purpose": "Several small quantities in g, tbsp and pc",
+      "recipe_name": "TC05 Chicken Sisig",
+      "servings": 3,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Chicken (whole, dressed)",
+          "quantity": 600.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 170.0,
+          "factor": 0.001,
+          "cost_exact": 102.0
+        },
+        {
+          "ingredient": "TC Onion (red)",
+          "quantity": 100.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 123.61,
+          "factor": 0.001,
+          "cost_exact": 12.361
+        },
+        {
+          "ingredient": "TC Chili (red)",
+          "quantity": 20.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 290.66,
+          "factor": 0.001,
+          "cost_exact": 5.8132
+        },
+        {
+          "ingredient": "TC Mayonnaise",
+          "quantity": 3.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 220.0,
+          "factor": 0.0147868,
+          "cost_exact": 9.759288
+        },
+        {
+          "ingredient": "TC Calamansi",
+          "quantity": 50.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 95.4,
+          "factor": 0.001,
+          "cost_exact": 4.77
+        },
+        {
+          "ingredient": "TC Chicken Egg",
+          "quantity": 1.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 8.25,
+          "factor": 1.0,
+          "cost_exact": 8.25
+        }
+      ],
+      "expected": {
+        "recipe_cost": 142.95,
+        "portion_cost": 47.65,
+        "raw_price": 136.1462,
+        "recommended_price": 140.0
+      }
+    },
+    {
+      "code": "TC06",
+      "purpose": "Waste percentage (5%) on beef",
+      "recipe_name": "TC06 Beef Tapa",
+      "servings": 4,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Beef Rump",
+          "quantity": 800.0,
+          "unit": "g",
+          "waste_pct": 5,
+          "base_unit": "kg",
+          "unit_price": 502.18,
+          "factor": 0.001,
+          "cost_exact": 422.8884210526316
+        },
+        {
+          "ingredient": "TC Soy Sauce",
+          "quantity": 60.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 62.0,
+          "factor": 0.001,
+          "cost_exact": 3.72
+        },
+        {
+          "ingredient": "TC Sugar (refined)",
+          "quantity": 30.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 81.49,
+          "factor": 0.001,
+          "cost_exact": 2.4447
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 20.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 2.6
+        }
+      ],
+      "expected": {
+        "recipe_cost": 431.65,
+        "portion_cost": 107.91,
+        "raw_price": 308.3237,
+        "recommended_price": 310.0
+      }
+    },
+    {
+      "code": "TC07",
+      "purpose": "Cup to L conversion, no rounding",
+      "recipe_name": "TC07 Tortang Talong",
+      "servings": 2,
+      "pricing_profile": "TC 30% no rounding",
+      "target_food_cost_pct": 30.0,
+      "rounding_rule": "none",
+      "ingredients": [
+        {
+          "ingredient": "TC Eggplant",
+          "quantity": 300.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 83.37,
+          "factor": 0.001,
+          "cost_exact": 25.011
+        },
+        {
+          "ingredient": "TC Chicken Egg",
+          "quantity": 3.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 8.25,
+          "factor": 1.0,
+          "cost_exact": 24.75
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 0.25,
+          "unit": "cup",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.236588,
+          "cost_exact": 6.02767077
+        },
+        {
+          "ingredient": "TC Salt (iodized)",
+          "quantity": 3.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 43.0,
+          "factor": 0.001,
+          "cost_exact": 0.129
+        }
+      ],
+      "expected": {
+        "recipe_cost": 55.92,
+        "portion_cost": 27.96,
+        "raw_price": 93.1961,
+        "recommended_price": 93.2
+      }
+    },
+    {
+      "code": "TC08",
+      "purpose": "Large recipe, 10 servings, cup and tbsp",
+      "recipe_name": "TC08 Pancit Canton",
+      "servings": 10,
+      "pricing_profile": "TC 40% round up P10",
+      "target_food_cost_pct": 40.0,
+      "rounding_rule": "nearest10",
+      "ingredients": [
+        {
+          "ingredient": "TC Canton Noodles",
+          "quantity": 1.0,
+          "unit": "kg",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 140.0,
+          "factor": 1.0,
+          "cost_exact": 140.0
+        },
+        {
+          "ingredient": "TC Pork Belly (Liempo)",
+          "quantity": 300.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 366.66,
+          "factor": 0.001,
+          "cost_exact": 109.998
+        },
+        {
+          "ingredient": "TC Carrots",
+          "quantity": 200.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 119.31,
+          "factor": 0.001,
+          "cost_exact": 23.862
+        },
+        {
+          "ingredient": "TC Cabbage",
+          "quantity": 400.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 147.48,
+          "factor": 0.001,
+          "cost_exact": 58.992
+        },
+        {
+          "ingredient": "TC Soy Sauce",
+          "quantity": 0.5,
+          "unit": "cup",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 62.0,
+          "factor": 0.236588,
+          "cost_exact": 7.334228
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 4.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.0147868,
+          "cost_exact": 6.027691152
+        }
+      ],
+      "expected": {
+        "recipe_cost": 346.21,
+        "portion_cost": 34.62,
+        "raw_price": 86.5535,
+        "recommended_price": 90.0
+      }
+    },
+    {
+      "code": "TC09",
+      "purpose": "High waste (15%) on fish",
+      "recipe_name": "TC09 Fried Bangus",
+      "servings": 2,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Bangus",
+          "quantity": 500.0,
+          "unit": "g",
+          "waste_pct": 15,
+          "base_unit": "kg",
+          "unit_price": 245.11,
+          "factor": 0.001,
+          "cost_exact": 144.18235294117648
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 0.5,
+          "unit": "cup",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.236588,
+          "cost_exact": 12.05534154
+        },
+        {
+          "ingredient": "TC Salt (iodized)",
+          "quantity": 5.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 43.0,
+          "factor": 0.001,
+          "cost_exact": 0.215
+        },
+        {
+          "ingredient": "TC White Vinegar",
+          "quantity": 2.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 45.0,
+          "factor": 0.0147868,
+          "cost_exact": 1.330812
+        }
+      ],
+      "expected": {
+        "recipe_cost": 157.78,
+        "portion_cost": 78.89,
+        "raw_price": 225.405,
+        "recommended_price": 230.0
+      }
+    },
+    {
+      "code": "TC10",
+      "purpose": "Single-serving silog plate",
+      "recipe_name": "TC10 Chicksilog",
+      "servings": 1,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Chicken (whole, dressed)",
+          "quantity": 150.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 170.0,
+          "factor": 0.001,
+          "cost_exact": 25.5
+        },
+        {
+          "ingredient": "TC Rice (well-milled)",
+          "quantity": 200.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 54.12,
+          "factor": 0.001,
+          "cost_exact": 10.824
+        },
+        {
+          "ingredient": "TC Chicken Egg",
+          "quantity": 1.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 8.25,
+          "factor": 1.0,
+          "cost_exact": 8.25
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 1.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.0147868,
+          "cost_exact": 1.506922788
+        }
+      ],
+      "expected": {
+        "recipe_cost": 46.08,
+        "portion_cost": 46.08,
+        "raw_price": 131.6598,
+        "recommended_price": 135.0
+      }
+    },
+    {
+      "code": "TC11",
+      "purpose": "Waste (8%) with a 28% target food cost",
+      "recipe_name": "TC11 Grilled Liempo",
+      "servings": 6,
+      "pricing_profile": "TC 28% round up P5",
+      "target_food_cost_pct": 28.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Pork Belly (Liempo)",
+          "quantity": 1.2,
+          "unit": "kg",
+          "waste_pct": 8,
+          "base_unit": "kg",
+          "unit_price": 366.66,
+          "factor": 1.0,
+          "cost_exact": 478.25217391304346
+        },
+        {
+          "ingredient": "TC Soy Sauce",
+          "quantity": 100.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 62.0,
+          "factor": 0.001,
+          "cost_exact": 6.2
+        },
+        {
+          "ingredient": "TC Calamansi",
+          "quantity": 60.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 95.4,
+          "factor": 0.001,
+          "cost_exact": 5.724
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 25.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 3.25
+        }
+      ],
+      "expected": {
+        "recipe_cost": 493.43,
+        "portion_cost": 82.24,
+        "raw_price": 293.7061,
+        "recommended_price": 295.0
+      }
+    },
+    {
+      "code": "TC12",
+      "purpose": "No rounding, centavo-level price",
+      "recipe_name": "TC12 Ginisang Ampalaya",
+      "servings": 4,
+      "pricing_profile": "TC 30% no rounding",
+      "target_food_cost_pct": 30.0,
+      "rounding_rule": "none",
+      "ingredients": [
+        {
+          "ingredient": "TC Ampalaya",
+          "quantity": 500.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 113.84,
+          "factor": 0.001,
+          "cost_exact": 56.92
+        },
+        {
+          "ingredient": "TC Chicken Egg",
+          "quantity": 2.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 8.25,
+          "factor": 1.0,
+          "cost_exact": 16.5
+        },
+        {
+          "ingredient": "TC Tomato",
+          "quantity": 150.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 106.37,
+          "factor": 0.001,
+          "cost_exact": 15.9555
+        },
+        {
+          "ingredient": "TC Onion (red)",
+          "quantity": 80.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 123.61,
+          "factor": 0.001,
+          "cost_exact": 9.8888
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 2.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.0147868,
+          "cost_exact": 3.013845576
+        }
+      ],
+      "expected": {
+        "recipe_cost": 102.28,
+        "portion_cost": 25.57,
+        "raw_price": 85.2318,
+        "recommended_price": 85.23
+      }
+    },
+    {
+      "code": "TC13",
+      "purpose": "Canned good priced per piece",
+      "recipe_name": "TC13 Corned Beef Silog",
+      "servings": 1,
+      "pricing_profile": "TC 40% round up P10",
+      "target_food_cost_pct": 40.0,
+      "rounding_rule": "nearest10",
+      "ingredients": [
+        {
+          "ingredient": "TC Corned Beef (150 g can)",
+          "quantity": 1.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 34.0,
+          "factor": 1.0,
+          "cost_exact": 34.0
+        },
+        {
+          "ingredient": "TC Rice (well-milled)",
+          "quantity": 200.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 54.12,
+          "factor": 0.001,
+          "cost_exact": 10.824
+        },
+        {
+          "ingredient": "TC Chicken Egg",
+          "quantity": 1.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 8.25,
+          "factor": 1.0,
+          "cost_exact": 8.25
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 1.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.0147868,
+          "cost_exact": 1.506922788
+        }
+      ],
+      "expected": {
+        "recipe_cost": 54.58,
+        "portion_cost": 54.58,
+        "raw_price": 136.4523,
+        "recommended_price": 140.0
+      }
+    },
+    {
+      "code": "TC14",
+      "purpose": "ml to L for water, canned sardines per piece",
+      "recipe_name": "TC14 Ginisang Sardinas with Misua",
+      "servings": 3,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Sardines (155 g can)",
+          "quantity": 2.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 21.5,
+          "factor": 1.0,
+          "cost_exact": 43.0
+        },
+        {
+          "ingredient": "TC Misua",
+          "quantity": 100.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 180.0,
+          "factor": 0.001,
+          "cost_exact": 18.0
+        },
+        {
+          "ingredient": "TC Onion (red)",
+          "quantity": 50.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 123.61,
+          "factor": 0.001,
+          "cost_exact": 6.1805
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 15.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 1.95
+        },
+        {
+          "ingredient": "TC Drinking Water",
+          "quantity": 750.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 16.5,
+          "factor": 0.001,
+          "cost_exact": 12.375
+        }
+      ],
+      "expected": {
+        "recipe_cost": 81.51,
+        "portion_cost": 27.17,
+        "raw_price": 77.6243,
+        "recommended_price": 80.0
+      }
+    },
+    {
+      "code": "TC15",
+      "purpose": "Cup of evaporated milk to L",
+      "recipe_name": "TC15 Mango Shake",
+      "servings": 2,
+      "pricing_profile": "TC 28% round up P5",
+      "target_food_cost_pct": 28.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Green Mango",
+          "quantity": 300.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 255.71,
+          "factor": 0.001,
+          "cost_exact": 76.713
+        },
+        {
+          "ingredient": "TC Evaporated Milk",
+          "quantity": 0.5,
+          "unit": "cup",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 129.73,
+          "factor": 0.236588,
+          "cost_exact": 15.34628062
+        },
+        {
+          "ingredient": "TC Sugar (refined)",
+          "quantity": 30.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 81.49,
+          "factor": 0.001,
+          "cost_exact": 2.4447
+        },
+        {
+          "ingredient": "TC Ice",
+          "quantity": 200.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 10.0,
+          "factor": 0.001,
+          "cost_exact": 2.0
+        }
+      ],
+      "expected": {
+        "recipe_cost": 96.5,
+        "portion_cost": 48.25,
+        "raw_price": 172.3285,
+        "recommended_price": 175.0
+      }
+    },
+    {
+      "code": "TC16",
+      "purpose": "Large batch, 40 servings, 12% waste",
+      "recipe_name": "TC16 BBQ Chicken (batch)",
+      "servings": 40,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Chicken (whole, dressed)",
+          "quantity": 5.0,
+          "unit": "kg",
+          "waste_pct": 12,
+          "base_unit": "kg",
+          "unit_price": 170.0,
+          "factor": 1.0,
+          "cost_exact": 965.9090909090909
+        },
+        {
+          "ingredient": "TC Ketchup",
+          "quantity": 500.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 150.0,
+          "factor": 0.001,
+          "cost_exact": 75.0
+        },
+        {
+          "ingredient": "TC Soy Sauce",
+          "quantity": 300.0,
+          "unit": "ml",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 62.0,
+          "factor": 0.001,
+          "cost_exact": 18.6
+        },
+        {
+          "ingredient": "TC Brown Sugar",
+          "quantity": 250.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 72.17,
+          "factor": 0.001,
+          "cost_exact": 18.0425
+        },
+        {
+          "ingredient": "TC Garlic",
+          "quantity": 100.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 130.0,
+          "factor": 0.001,
+          "cost_exact": 13.0
+        }
+      ],
+      "expected": {
+        "recipe_cost": 1090.55,
+        "portion_cost": 27.26,
+        "raw_price": 77.8965,
+        "recommended_price": 80.0
+      }
+    },
+    {
+      "code": "TC17",
+      "purpose": "Exact multiple: P120.00 must stay P120 (not round up to P125)",
+      "recipe_name": "TC17 Chicken Tinola",
+      "servings": 4,
+      "pricing_profile": "TC 35% round up P5",
+      "target_food_cost_pct": 35.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Chicken (whole, dressed)",
+          "quantity": 800.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 170.0,
+          "factor": 0.001,
+          "cost_exact": 136.0
+        },
+        {
+          "ingredient": "TC Kangkong (bundle)",
+          "quantity": 2.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 15.0,
+          "factor": 1.0,
+          "cost_exact": 30.0
+        },
+        {
+          "ingredient": "TC Bay Leaf",
+          "quantity": 4.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 0.5,
+          "factor": 1.0,
+          "cost_exact": 2.0
+        }
+      ],
+      "expected": {
+        "recipe_cost": 168.0,
+        "portion_cost": 42.0,
+        "raw_price": 120.0,
+        "recommended_price": 120.0
+      }
+    },
+    {
+      "code": "TC18",
+      "purpose": "Beverage, L and g units, no rounding",
+      "recipe_name": "TC18 Calamansi Juice",
+      "servings": 4,
+      "pricing_profile": "TC 30% no rounding",
+      "target_food_cost_pct": 30.0,
+      "rounding_rule": "none",
+      "ingredients": [
+        {
+          "ingredient": "TC Calamansi",
+          "quantity": 200.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 95.4,
+          "factor": 0.001,
+          "cost_exact": 19.08
+        },
+        {
+          "ingredient": "TC Sugar (refined)",
+          "quantity": 50.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 81.49,
+          "factor": 0.001,
+          "cost_exact": 4.0745
+        },
+        {
+          "ingredient": "TC Drinking Water",
+          "quantity": 1.0,
+          "unit": "L",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 16.5,
+          "factor": 1.0,
+          "cost_exact": 16.5
+        },
+        {
+          "ingredient": "TC Ice",
+          "quantity": 300.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 10.0,
+          "factor": 0.001,
+          "cost_exact": 3.0
+        }
+      ],
+      "expected": {
+        "recipe_cost": 42.65,
+        "portion_cost": 10.66,
+        "raw_price": 35.5454,
+        "recommended_price": 35.55
+      }
+    },
+    {
+      "code": "TC19",
+      "purpose": "50 servings, pieces and cups",
+      "recipe_name": "TC19 Lumpiang Shanghai",
+      "servings": 50,
+      "pricing_profile": "TC 40% round up P10",
+      "target_food_cost_pct": 40.0,
+      "rounding_rule": "nearest10",
+      "ingredients": [
+        {
+          "ingredient": "TC Ground Pork",
+          "quantity": 1.0,
+          "unit": "kg",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 320.0,
+          "factor": 1.0,
+          "cost_exact": 320.0
+        },
+        {
+          "ingredient": "TC Carrots",
+          "quantity": 150.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 119.31,
+          "factor": 0.001,
+          "cost_exact": 17.8965
+        },
+        {
+          "ingredient": "TC Onion (red)",
+          "quantity": 100.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 123.61,
+          "factor": 0.001,
+          "cost_exact": 12.361
+        },
+        {
+          "ingredient": "TC Chicken Egg",
+          "quantity": 2.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 8.25,
+          "factor": 1.0,
+          "cost_exact": 16.5
+        },
+        {
+          "ingredient": "TC Lumpia Wrapper",
+          "quantity": 50.0,
+          "unit": "pc",
+          "waste_pct": 0,
+          "base_unit": "pc",
+          "unit_price": 1.2,
+          "factor": 1.0,
+          "cost_exact": 60.0
+        },
+        {
+          "ingredient": "TC Cooking Oil (palm)",
+          "quantity": 2.0,
+          "unit": "cup",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 101.91,
+          "factor": 0.236588,
+          "cost_exact": 48.22136616
+        }
+      ],
+      "expected": {
+        "recipe_cost": 474.98,
+        "portion_cost": 9.5,
+        "raw_price": 23.7489,
+        "recommended_price": 30.0
+      }
+    },
+    {
+      "code": "TC20",
+      "purpose": "Imperial units: lb and oz to kg",
+      "recipe_name": "TC20 Bistek Tagalog",
+      "servings": 4,
+      "pricing_profile": "TC 28% round up P5",
+      "target_food_cost_pct": 28.0,
+      "rounding_rule": "nearest5",
+      "ingredients": [
+        {
+          "ingredient": "TC Beef Rump",
+          "quantity": 2.0,
+          "unit": "lb",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 502.18,
+          "factor": 0.453592,
+          "cost_exact": 455.56966112
+        },
+        {
+          "ingredient": "TC Soy Sauce",
+          "quantity": 4.0,
+          "unit": "tbsp",
+          "waste_pct": 0,
+          "base_unit": "L",
+          "unit_price": 62.0,
+          "factor": 0.0147868,
+          "cost_exact": 3.6671264
+        },
+        {
+          "ingredient": "TC Calamansi",
+          "quantity": 3.0,
+          "unit": "oz",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 95.4,
+          "factor": 0.0283495,
+          "cost_exact": 8.1136269
+        },
+        {
+          "ingredient": "TC Onion (red)",
+          "quantity": 200.0,
+          "unit": "g",
+          "waste_pct": 0,
+          "base_unit": "kg",
+          "unit_price": 123.61,
+          "factor": 0.001,
+          "cost_exact": 24.722
+        }
+      ],
+      "expected": {
+        "recipe_cost": 492.07,
+        "portion_cost": 123.02,
+        "raw_price": 439.3504,
+        "recommended_price": 440.0
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+case,recipe,pricing_profile,value,gold_standard,system,abs_difference,correct
+TC01,"TC01 Chicken Adobo","TC 35% round up P5",recipe_cost,193.35,193.35,0.0000,Y
+TC01,"TC01 Chicken Adobo","TC 35% round up P5",portion_cost,48.34,48.34,0.0000,Y
+TC01,"TC01 Chicken Adobo","TC 35% round up P5",recommended_price,140.00,140.00,0.0000,Y
+TC02,"TC02 Chicken Inasal","TC 35% round up P5",recipe_cost,320.07,320.07,0.0000,Y
+TC02,"TC02 Chicken Inasal","TC 35% round up P5",portion_cost,53.35,53.35,0.0000,Y
+TC02,"TC02 Chicken Inasal","TC 35% round up P5",recommended_price,155.00,155.00,0.0000,Y
+TC03,"TC03 Pork Sinigang","TC 30% no rounding",recipe_cost,433.68,433.68,0.0000,Y
+TC03,"TC03 Pork Sinigang","TC 30% no rounding",portion_cost,86.74,86.74,0.0000,Y
+TC03,"TC03 Pork Sinigang","TC 30% no rounding",recommended_price,289.12,289.12,0.0000,Y
+TC04,"TC04 Garlic Fried Rice","TC 40% round up P10",recipe_cost,65.36,65.36,0.0000,Y
+TC04,"TC04 Garlic Fried Rice","TC 40% round up P10",portion_cost,8.17,8.17,0.0000,Y
+TC04,"TC04 Garlic Fried Rice","TC 40% round up P10",recommended_price,30.00,30.00,0.0000,Y
+TC05,"TC05 Chicken Sisig","TC 35% round up P5",recipe_cost,142.95,142.95,0.0000,Y
+TC05,"TC05 Chicken Sisig","TC 35% round up P5",portion_cost,47.65,47.65,0.0000,Y
+TC05,"TC05 Chicken Sisig","TC 35% round up P5",recommended_price,140.00,140.00,0.0000,Y
+TC06,"TC06 Beef Tapa","TC 35% round up P5",recipe_cost,431.65,431.65,0.0000,Y
+TC06,"TC06 Beef Tapa","TC 35% round up P5",portion_cost,107.91,107.91,0.0000,Y
+TC06,"TC06 Beef Tapa","TC 35% round up P5",recommended_price,310.00,310.00,0.0000,Y
+TC07,"TC07 Tortang Talong","TC 30% no rounding",recipe_cost,55.92,55.92,0.0000,Y
+TC07,"TC07 Tortang Talong","TC 30% no rounding",portion_cost,27.96,27.96,0.0000,Y
+TC07,"TC07 Tortang Talong","TC 30% no rounding",recommended_price,93.20,93.20,0.0000,Y
+TC08,"TC08 Pancit Canton","TC 40% round up P10",recipe_cost,346.21,346.21,0.0000,Y
+TC08,"TC08 Pancit Canton","TC 40% round up P10",portion_cost,34.62,34.62,0.0000,Y
+TC08,"TC08 Pancit Canton","TC 40% round up P10",recommended_price,90.00,90.00,0.0000,Y
+TC09,"TC09 Fried Bangus","TC 35% round up P5",recipe_cost,157.78,157.78,0.0000,Y
+TC09,"TC09 Fried Bangus","TC 35% round up P5",portion_cost,78.89,78.89,0.0000,Y
+TC09,"TC09 Fried Bangus","TC 35% round up P5",recommended_price,230.00,230.00,0.0000,Y
+TC10,"TC10 Chicksilog","TC 35% round up P5",recipe_cost,46.08,46.08,0.0000,Y
+TC10,"TC10 Chicksilog","TC 35% round up P5",portion_cost,46.08,46.08,0.0000,Y
+TC10,"TC10 Chicksilog","TC 35% round up P5",recommended_price,135.00,135.00,0.0000,Y
+TC11,"TC11 Grilled Liempo","TC 28% round up P5",recipe_cost,493.43,493.43,0.0000,Y
+TC11,"TC11 Grilled Liempo","TC 28% round up P5",portion_cost,82.24,82.24,0.0000,Y
+TC11,"TC11 Grilled Liempo","TC 28% round up P5",recommended_price,295.00,295.00,0.0000,Y
+TC12,"TC12 Ginisang Ampalaya","TC 30% no rounding",recipe_cost,102.28,102.28,0.0000,Y
+TC12,"TC12 Ginisang Ampalaya","TC 30% no rounding",portion_cost,25.57,25.57,0.0000,Y
+TC12,"TC12 Ginisang Ampalaya","TC 30% no rounding",recommended_price,85.23,85.23,0.0000,Y
+TC13,"TC13 Corned Beef Silog","TC 40% round up P10",recipe_cost,54.58,54.58,0.0000,Y
+TC13,"TC13 Corned Beef Silog","TC 40% round up P10",portion_cost,54.58,54.58,0.0000,Y
+TC13,"TC13 Corned Beef Silog","TC 40% round up P10",recommended_price,140.00,140.00,0.0000,Y
+TC14,"TC14 Ginisang Sardinas with Misua","TC 35% round up P5",recipe_cost,81.51,81.51,0.0000,Y
+TC14,"TC14 Ginisang Sardinas with Misua","TC 35% round up P5",portion_cost,27.17,27.17,0.0000,Y
+TC14,"TC14 Ginisang Sardinas with Misua","TC 35% round up P5",recommended_price,80.00,80.00,0.0000,Y
+TC15,"TC15 Mango Shake","TC 28% round up P5",recipe_cost,96.50,96.50,0.0000,Y
+TC15,"TC15 Mango Shake","TC 28% round up P5",portion_cost,48.25,48.25,0.0000,Y
+TC15,"TC15 Mango Shake","TC 28% round up P5",recommended_price,175.00,175.00,0.0000,Y
+TC16,"TC16 BBQ Chicken (batch)","TC 35% round up P5",recipe_cost,1090.55,1090.55,0.0000,Y
+TC16,"TC16 BBQ Chicken (batch)","TC 35% round up P5",portion_cost,27.26,27.26,0.0000,Y
+TC16,"TC16 BBQ Chicken (batch)","TC 35% round up P5",recommended_price,80.00,80.00,0.0000,Y
+TC17,"TC17 Chicken Tinola","TC 35% round up P5",recipe_cost,168.00,168.00,0.0000,Y
+TC17,"TC17 Chicken Tinola","TC 35% round up P5",portion_cost,42.00,42.00,0.0000,Y
+TC17,"TC17 Chicken Tinola","TC 35% round up P5",recommended_price,120.00,120.00,0.0000,Y
+TC18,"TC18 Calamansi Juice","TC 30% no rounding",recipe_cost,42.65,42.65,0.0000,Y
+TC18,"TC18 Calamansi Juice","TC 30% no rounding",portion_cost,10.66,10.66,0.0000,Y
+TC18,"TC18 Calamansi Juice","TC 30% no rounding",recommended_price,35.55,35.55,0.0000,Y
+TC19,"TC19 Lumpiang Shanghai","TC 40% round up P10",recipe_cost,474.98,474.98,0.0000,Y
+TC19,"TC19 Lumpiang Shanghai","TC 40% round up P10",portion_cost,9.50,9.50,0.0000,Y
+TC19,"TC19 Lumpiang Shanghai","TC 40% round up P10",recommended_price,30.00,30.00,0.0000,Y
+TC20,"TC20 Bistek Tagalog","TC 28% round up P5",recipe_cost,492.07,492.07,0.0000,Y
+TC20,"TC20 Bistek Tagalog","TC 28% round up P5",portion_cost,123.02,123.02,0.0000,Y
+TC20,"TC20 Bistek Tagalog","TC 28% round up P5",recommended_price,440.00,440.00,0.0000,Y
