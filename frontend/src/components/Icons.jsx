@@ -1,4 +1,4 @@
-// ── Favicon SVG string map (SVG attribute syntax, not JSX) ───────────────────
+// Favicon SVG string map (SVG attribute syntax, not JSX)
 const BRAND_SVG_INNER = {
   fork: `<line x1="13" y1="7" x2="13" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="7" x2="20" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="27" y1="7" x2="27" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M13 15 C13 20 17 20.5 20 20.5 C23 20.5 27 20 27 15" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><line x1="20" y1="20.5" x2="20" y2="33" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="15.5" y1="25" x2="24.5" y2="25" stroke="white" stroke-width="1.6" stroke-linecap="round"/><line x1="15.5" y1="28.5" x2="24.5" y2="28.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>`,
   flame: `<path d="M20 9 C17 12 14 16 14 20.5 C14 24.5 16.7 28 20 28 C23.3 28 26 24.5 26 20.5 C26 18 24.5 16 24.5 16 C24.5 16 24 19 22 20 C22 20 23 17 21.5 14 C21.5 14 21 17 19 17.5 C19 17.5 21 15 20 9 Z" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.22)" stroke-linejoin="round"/>`,
@@ -12,7 +12,7 @@ export function getFaviconSvg(iconId, accentColor = '#10b981') {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="${accentColor}"/>${inner}</svg>`;
 }
 
-// ── Brand icon inner SVG content map ─────────────────────────────────────────
+// Brand icon inner SVG content map
 const BRAND_INNER = {
   fork: (
     <>
@@ -67,7 +67,7 @@ const BRAND_INNER = {
   ),
 };
 
-// ── Brand mark ────────────────────────────────────────────────────────────────
+// Brand mark
 // iconId: 'fork' | 'flame' | 'leaf' | 'star' | 'bowl' | 'custom'
 // customUrl: base64 data URL for custom PNG (used when iconId === 'custom')
 export function BrandMark({ size = 32, iconId = 'fork', customUrl = '', className = '', style: styleProp = {} }) {
@@ -99,7 +99,7 @@ export function BrandMark({ size = 32, iconId = 'fork', customUrl = '', classNam
   );
 }
 
-// ── Stat card icons ───────────────────────────────────────────────────────────
+// Stat card icons
 
 export function IconIngredients({ size = 20 }) {
   return (

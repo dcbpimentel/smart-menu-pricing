@@ -7,7 +7,7 @@ import Select from '../components/Select';
 import { useToast } from '../components/Toast';
 import { SkeletonTable } from '../components/Skeleton';
 
-/* ─── Local tokens ─────────────────────────────────────────────────────────── */
+/* Local tokens */
 const T = {
   accent:      '#2A6E3A',
   textPrimary: '#1C1C1E',
@@ -47,10 +47,10 @@ const SOURCE_OPTIONS = [
   { value: 'da',     label: 'DA prices only',       description: 'Only use prices from DA bulletins' },
 ];
 
-/* ─── Mode context: 'panel' (desktop two-col) | 'accordion' (mobile stacked) ─ */
+/* Mode context: 'panel' (desktop two-col) | 'accordion' (mobile stacked) */
 const SettingsModeCtx = createContext('panel');
 
-/* ─── Shared UI primitives ─────────────────────────────────────────────────── */
+/* Shared UI primitives */
 
 function SettingGroup({
   icon, iconColor = T.accent, iconBg = 'rgba(42,110,58,0.09)',
@@ -85,7 +85,7 @@ function SettingGroup({
 
   return (
     <div>
-      {/* ── Header ── */}
+      {/* Header */}
       <div
         onClick={canToggle ? toggle : undefined}
         style={{
@@ -126,7 +126,7 @@ function SettingGroup({
         </div>
       </div>
 
-      {/* ── Body ── */}
+      {/* Body */}
       {isPanelMode ? (
         /* Panel mode: always visible, no animation here (animation is on the panel switch) */
         <Card>{children}</Card>
@@ -269,7 +269,7 @@ function GhostBtn({ children, onClick, type = 'button', disabled = false, size =
   );
 }
 
-/* ─── Modal shell ──────────────────────────────────────────────────────────── */
+/* Modal shell */
 function Modal({ onClose, children }) {
   return createPortal(
     <div
@@ -333,7 +333,7 @@ function ModalInput({ label, required, ...rest }) {
   );
 }
 
-/* ─── Restaurant Profile ───────────────────────────────────────────────────── */
+/* Restaurant Profile */
 function RestaurantProfileSection() {
   const [form, setForm] = useState(() => {
     const p = loadPrefs();
@@ -390,7 +390,7 @@ function RestaurantProfileSection() {
   );
 }
 
-/* ─── Preferences ──────────────────────────────────────────────────────────── */
+/* Preferences */
 function PreferencesSection() {
   const [prefs, setPrefsState] = useState(() => loadPrefs());
   const [saved, setSaved] = useState(false);
@@ -459,7 +459,7 @@ function PreferencesSection() {
   );
 }
 
-/* ─── Convenience Tools ────────────────────────────────────────────────────── */
+/* Convenience Tools */
 function ConvenienceSection() {
   const [calcEnabled, setCalcEnabled] = useState(() => {
     try { return localStorage.getItem('smp_calc_enabled') !== 'false'; } catch { return true; }
@@ -486,7 +486,7 @@ function ConvenienceSection() {
   );
 }
 
-/* ─── Pricing Profiles ─────────────────────────────────────────────────────── */
+/* Pricing Profiles */
 function PricingProfilesSection() {
   const toast = useToast();
   const [profiles, setProfiles] = useState([]);
@@ -669,7 +669,7 @@ function PricingProfilesSection() {
   );
 }
 
-/* ─── Data & Export ────────────────────────────────────────────────────────── */
+/* Data & Export */
 const EXPORT_SLICES = [
   {
     key: 'ingredients',
@@ -790,7 +790,7 @@ function DataSection() {
       {/* Divider before full backup */}
       <div style={{ margin: '0 18px', borderTop: `1px solid ${T.rowBorder}` }} />
 
-      <SettingRow label="Full Backup" hint="Everything — all tables in one file" last>
+      <SettingRow label="Full Backup" hint="Everything: all tables in one file" last>
         <button
           onClick={handleAll}
           disabled={loading || active !== null}
@@ -818,7 +818,7 @@ function DataSection() {
   );
 }
 
-/* ─── About ────────────────────────────────────────────────────────────────── */
+/* About */
 function AboutSection() {
   const prefs = loadPrefs();
   const rows = [
@@ -850,7 +850,7 @@ function AboutSection() {
   );
 }
 
-/* ─── Reset (admin only) ───────────────────────────────────────────────────── */
+/* Reset (admin only) */
 function ResetSection() {
   const toast = useToast();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -878,7 +878,7 @@ function ResetSection() {
       >
         <SettingRow
           label="Reset for New Tester"
-          hint="Wipes all data and restores seed ingredients — cannot be undone"
+          hint="Wipes all data and restores the seed ingredients; cannot be undone"
           last
         >
           <button
@@ -918,7 +918,7 @@ function ResetSection() {
   );
 }
 
-/* ─── CSS injected once for layout + animations ────────────────────────────── */
+/* CSS injected once for layout + animations */
 const SETTINGS_CSS = `
 @keyframes smpSlideIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -956,7 +956,7 @@ const SETTINGS_CSS = `
   background: rgba(0,0,0,0.06);
   margin: 6px 4px;
 }
-/* ── Mobile: section buttons wrap onto rows so every section is visible ── */
+/* Mobile: section buttons wrap onto rows so every section is visible */
 @media (max-width: 767px) {
   .smp-settings { flex-direction: column; align-items: stretch; min-height: unset; }
   .smp-nav {
@@ -986,7 +986,7 @@ const SETTINGS_CSS = `
 }
 `;
 
-/* ─── Left nav item ────────────────────────────────────────────────────────── */
+/* Left nav item */
 function NavItem({ icon, iconBg, iconColor, label, active, onClick, danger }) {
   const [hover, setHover] = useState(false);
   const bg = active
@@ -1029,7 +1029,7 @@ function NavItem({ icon, iconBg, iconColor, label, active, onClick, danger }) {
   );
 }
 
-/* ─── Section config ───────────────────────────────────────────────────────── */
+/* Section config */
 const NAV_SECTIONS = [
   {
     key: 'restaurant', label: 'Restaurant', group: 'main',
@@ -1076,7 +1076,7 @@ const RESET_NAV_ITEM = {
   Component: ResetSection,
 };
 
-/* ─── Page ─────────────────────────────────────────────────────────────────── */
+/* Page */
 export default function Settings() {
   const user = getUser();
   const sections = user?.role === 'admin' ? [...NAV_SECTIONS, RESET_NAV_ITEM] : NAV_SECTIONS;
@@ -1116,7 +1116,7 @@ export default function Settings() {
 
   return (
     <div className="smp-settings">
-      {/* ── Left nav ── */}
+      {/* Left nav */}
       <nav className="smp-nav">
         {navItems.map(item =>
           item.divider ? (
@@ -1136,7 +1136,7 @@ export default function Settings() {
         )}
       </nav>
 
-      {/* ── Right panel ── */}
+      {/* Right panel */}
       <SettingsModeCtx.Provider value="panel">
         <div className="smp-panel">
           {current && (

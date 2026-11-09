@@ -1,7 +1,7 @@
 import { useState, useReducer, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-// ── Design tokens (warm system palette) ──────────────────────────────────────
+// Design tokens (warm system palette)
 const C = {
   accent:      '#4C5D3E',
   panelBg:     'rgba(252, 249, 245, 0.9)',
@@ -18,7 +18,7 @@ const C = {
   textErr:     '#C0392B',
 };
 
-// ── Styles injected once into the portal ─────────────────────────────────────
+// Styles injected once into the portal
 const PORTAL_STYLES = `
   @keyframes calcPanelIn  { from { opacity:0; transform:scale(0.84) translateY(16px); } to { opacity:1; transform:scale(1) translateY(0); } }
   @keyframes calcPanelOut { from { opacity:1; transform:scale(1) translateY(0); }       to { opacity:0; transform:scale(0.9) translateY(10px); } }
@@ -29,7 +29,7 @@ const PORTAL_STYLES = `
   .fc-toggle:active { transform: scale(0.94) !important; }
 `;
 
-// ── Calculator logic ──────────────────────────────────────────────────────────
+// Calculator logic
 const INIT_STATE = { display: '0', expr: '', op: null, prev: null, fresh: false };
 
 function fmtNum(n) {
@@ -96,7 +96,7 @@ function calcReducer(s, a) {
   }
 }
 
-// ── Button config ─────────────────────────────────────────────────────────────
+// Button config
 const BTN_ROWS = [
   [
     { label: 'AC', kind: 'act', action: { type: 'CLEAR' } },
@@ -137,7 +137,7 @@ function btnBg(kind) {
   return C.numBtn;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// Component
 export default function FloatingCalculator() {
   const [enabled, setEnabled] = useState(() => {
     try { return localStorage.getItem('smp_calc_enabled') !== 'false'; } catch { return true; }
@@ -300,7 +300,7 @@ export default function FloatingCalculator() {
               lineHeight: 1,
               opacity: expr ? 0.85 : 0.25,
             }}>
-              {expr || (op ? `${calcState.prev} ${op}` : '—')}
+              {expr || (op ? `${calcState.prev} ${op}` : '-')}
             </div>
             <div style={{
               fontSize: numFontSize,

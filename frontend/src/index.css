@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ── Design Tokens ───────────────────────────────────────────────────────── */
+/* Design Tokens */
 :root {
   --canvas-bg:           #EDE8E1;
   --card-bg:             #FFFFFF;
@@ -47,13 +47,13 @@ html, body {
   height: 100%;
 }
 
-/* ── Custom scrollbars ───────────────────────────────────────────────────── */
+/* Custom scrollbars */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #B8A898; }
 
-/* ── Grain texture overlay ───────────────────────────────────────────────── */
+/* Grain texture overlay */
 .grain-overlay {
   position: fixed;
   inset: 0;
@@ -65,7 +65,7 @@ html, body {
   mix-blend-mode: overlay;
 }
 
-/* ── Page transition ─────────────────────────────────────────────────────── */
+/* Page transition */
 @keyframes pageEnter {
   from {
     opacity: 0;
@@ -83,7 +83,7 @@ html, body {
   will-change: opacity, transform;
 }
 
-/* ── Topbar title cross-fade on route change ─────────────────────────────── */
+/* Topbar title cross-fade on route change */
 @keyframes topbarTitleIn {
   from { opacity: 0; transform: translateY(-5px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -92,7 +92,7 @@ html, body {
   animation: topbarTitleIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* ── Login animations ────────────────────────────────────────────────────── */
+/* Login animations */
 @keyframes loginBrandIn {
   from { opacity: 0; transform: translateX(-28px); filter: blur(6px); }
   to   { opacity: 1; transform: translateX(0);     filter: blur(0px); }
@@ -120,7 +120,7 @@ html, body {
 .login-item-4 { animation: loginFormItemIn 0.55s 0.30s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .login-item-5 { animation: loginFormItemIn 0.55s 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-/* ── Logout / auth-screen overlay ────────────────────────────────────────── */
+/* Logout / auth-screen overlay */
 @keyframes authOverlayIn {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -130,7 +130,7 @@ html, body {
   to   { opacity: 1; transform: scale(1);    filter: blur(0px); }
 }
 
-/* ── Focus rings ─────────────────────────────────────────────────────────── */
+/* Focus rings */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
@@ -139,12 +139,12 @@ select:focus-visible {
   box-shadow: 0 0 0 4px var(--accent-focus) !important;
 }
 
-/* ── Remove number input arrows ──────────────────────────────────────────── */
+/* Remove number input arrows */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 
-/* ── Page fade-in ────────────────────────────────────────────────────────── */
+/* Page fade-in */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
@@ -174,7 +174,7 @@ main {
   animation: riseIn 0.42s cubic-bezier(0.22,1,0.36,1) both;
 }
 
-/* ── Sidebar nav items ───────────────────────────────────────────────────── */
+/* Sidebar nav items */
 .snav-item {
   display: flex;
   align-items: center;
@@ -238,7 +238,7 @@ main {
   user-select: none;
 }
 
-/* ── Profile card hover ──────────────────────────────────────────────────── */
+/* Profile card hover */
 .profile-card:hover {
   background: var(--sidebar-hover-bg) !important;
 }
@@ -246,7 +246,7 @@ main {
   transform: scale(0.98);
 }
 
-/* ── Sidebar edge collapse toggle ────────────────────────────────────────── */
+/* Sidebar edge collapse toggle */
 .sidebar-edge-toggle {
   position: absolute;
   right: -13px;
@@ -289,7 +289,7 @@ div:has(> .sidebar-edge-toggle):hover > .sidebar-edge-toggle {
   opacity: 0.75;
 }
 
-/* ── Topbar icon button ──────────────────────────────────────────────────── */
+/* Topbar icon button */
 .topbar-icon-btn {
   display: flex;
   align-items: center;
@@ -314,7 +314,7 @@ div:has(> .sidebar-edge-toggle):hover > .sidebar-edge-toggle {
   transform: scale(0.93) !important;
 }
 
-/* ── Global button transitions ───────────────────────────────────────────── */
+/* Global button transitions */
 button,
 a[role="button"] {
   transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1),
@@ -333,7 +333,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* ── Primary button ──────────────────────────────────────────────────────── */
+/* Primary button */
 .btn-primary {
   background: var(--accent);
   color: #FFFFFF;
@@ -353,7 +353,7 @@ button:disabled {
   box-shadow: 0 4px 12px rgba(42,110,58,0.22);
 }
 
-/* ── Card hover lift ─────────────────────────────────────────────────────── */
+/* Card hover lift */
 .card-hover {
   transition: box-shadow 0.22s ease, transform 0.22s cubic-bezier(0.22,1,0.36,1), border-color 0.18s ease;
 }
@@ -363,7 +363,7 @@ button:disabled {
   border-color: var(--input-border) !important;
 }
 
-/* ── Mobile bottom nav ───────────────────────────────────────────────────── */
+/* Mobile bottom nav */
 .mobile-bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -437,7 +437,7 @@ button:disabled {
   background-color: var(--sidebar-active-bg);
 }
 
-/* ── Skeleton shimmer ────────────────────────────────────────────────────── */
+/* Skeleton shimmer */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
   100% { background-position:  600px 0; }
@@ -453,7 +453,7 @@ button:disabled {
   animation: shimmer 1.6s infinite linear;
 }
 
-/* ── Toast slide-in / slide-out ──────────────────────────────────────────── */
+/* Toast slide-in / slide-out */
 @keyframes toastIn {
   from { opacity: 0; transform: translateX(20px) scale(0.94); }
   to   { opacity: 1; transform: translateX(0)    scale(1); }
@@ -470,7 +470,7 @@ button:disabled {
   pointer-events: none;
 }
 
-/* ── Dropdown / Select open & close ─────────────────────────────────────── */
+/* Dropdown / Select open & close */
 @keyframes dropOpen {
   from { opacity: 0; transform: translateY(-6px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
@@ -489,13 +489,13 @@ button:disabled {
   pointer-events: none;
 }
 
-/* ── Command palette ─────────────────────────────────────────────────────── */
+/* Command palette */
 @keyframes paletteIn {
   from { opacity: 0; transform: translateY(-14px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0)      scale(1); }
 }
 
-/* ── Empty state ─────────────────────────────────────────────────────────── */
+/* Empty state */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -531,7 +531,7 @@ button:disabled {
   margin-bottom: 22px;
 }
 
-/* ── Inline delete confirm ───────────────────────────────────────────────── */
+/* Inline delete confirm */
 .delete-confirm {
   display: inline-flex;
   align-items: center;
@@ -539,7 +539,7 @@ button:disabled {
   animation: fadeUp 0.15s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* ── Category pill ───────────────────────────────────────────────────────── */
+/* Category pill */
 .cat-pill {
   display: inline-block;
   padding: 3px 10px;
@@ -550,7 +550,7 @@ button:disabled {
   color: var(--text-secondary);
 }
 
-/* ── Status badge ────────────────────────────────────────────────────────── */
+/* Status badge */
 .badge-good {
   display: inline-block;
   padding: 3px 10px;
@@ -580,7 +580,7 @@ button:disabled {
   border: 1px solid var(--border);
 }
 
-/* ── Modal open & close ──────────────────────────────────────────────────── */
+/* Modal open & close */
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.94) translateY(10px); }
   to   { opacity: 1; transform: scale(1)    translateY(0); }
@@ -610,22 +610,22 @@ button:disabled {
   animation: backdropOut 0.18s ease both;
 }
 
-/* ── Link transitions ────────────────────────────────────────────────────── */
+/* Link transitions */
 a {
   transition: color 0.15s ease, opacity 0.15s ease;
 }
 
-/* ── Input transitions ───────────────────────────────────────────────────── */
+/* Input transitions */
 input, textarea, select {
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-/* ── Table rows ──────────────────────────────────────────────────────────── */
+/* Table rows */
 tbody tr {
   transition: background-color 0.12s ease;
 }
 
-/* ── Staggered list entrance ─────────────────────────────────────────────── */
+/* Staggered list entrance */
 @keyframes staggerFadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -635,7 +635,7 @@ tbody tr {
   animation-delay: min(calc(var(--i, 0) * 40ms), 320ms);
 }
 
-/* ── Card spring entrance (for grids) ────────────────────────────────────── */
+/* Card spring entrance (for grids) */
 @keyframes cardSpringIn {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
@@ -645,7 +645,7 @@ tbody tr {
   animation-delay: min(calc(var(--i, 0) * 60ms), 360ms);
 }
 
-/* ── Form input error shake ──────────────────────────────────────────────── */
+/* Form input error shake */
 @keyframes inputShake {
   0%, 100% { transform: translateX(0); }
   18%       { transform: translateX(-5px); }
@@ -659,7 +659,7 @@ tbody tr {
   box-shadow: 0 0 0 3px rgba(239,68,68,0.14) !important;
 }
 
-/* ── Interactive table row ───────────────────────────────────────────────── */
+/* Interactive table row */
 .row-interactive {
   transition: background-color 0.12s ease, transform 0.1s ease;
   cursor: pointer;
@@ -668,13 +668,13 @@ tbody tr {
   transform: scale(0.995);
 }
 
-/* ── Cost bar animation ──────────────────────────────────────────────────── */
+/* Cost bar animation */
 .cost-bar-inner {
   transform-origin: left center;
   animation: growBar 0.62s cubic-bezier(0.22,1,0.36,1) both;
 }
 
-/* ── Responsive helpers ──────────────────────────────────────────────────── */
+/* Responsive helpers */
 @media (max-width: 1024px) {
   .hide-tablet { display: none !important; }
 }
@@ -682,7 +682,7 @@ tbody tr {
   .hide-mobile { display: none !important; }
 }
 
-/* ── Reduced motion ──────────────────────────────────────────────────────── */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

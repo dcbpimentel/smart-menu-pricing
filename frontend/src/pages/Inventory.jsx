@@ -39,8 +39,8 @@ const inputStyle = {
   width: '100%', boxSizing: 'border-box',
 };
 
-const fmt = (n) => n == null ? '—' : Number(n).toFixed(3).replace(/\.?0+$/, '') || '0';
-const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const fmt = (n) => n == null ? '-' : Number(n).toFixed(3).replace(/\.?0+$/, '') || '0';
+const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
 
 function Modal({ onClose, title, subtitle, children, footer }) {
   return createPortal(
@@ -95,7 +95,7 @@ function HistoryModal({ ingredient, onClose }) {
   return (
     <Modal
       onClose={onClose}
-      title={`${ingredient.name} — History`}
+      title={`${ingredient.name} History`}
       subtitle="Last 100 transactions, newest first"
     >
       {loading ? (
@@ -122,14 +122,14 @@ function HistoryModal({ ingredient, onClose }) {
                     <td style={tdStyle}>
                       <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color }}>
                         {cfg.label}
-                        {row.recipe_name && ` — ${row.recipe_name}`}
+                        {row.recipe_name && ` (${row.recipe_name})`}
                         {row.batches && row.batches > 1 && ` ×${row.batches}`}
                       </span>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: row.quantity >= 0 ? T.ok : T.danger }}>
                       {row.quantity >= 0 ? '+' : ''}{fmt(row.quantity)} {row.unit}
                     </td>
-                    <td style={{ ...tdStyle, color: T.textMuted, fontSize: 12 }}>{row.notes || '—'}</td>
+                    <td style={{ ...tdStyle, color: T.textMuted, fontSize: 12 }}>{row.notes || '-'}</td>
                   </tr>
                 );
               })}
@@ -433,7 +433,7 @@ export default function Inventory() {
         </div>
       )}
 
-      {/* First-time hint — visible when ingredients exist but none have been stocked */}
+      {/* First-time hint, shown when no ingredient has stock yet */}
       {!loading && totalItems > 0 && hasStock === 0 && (
         <div style={{ marginBottom: 16, padding: '14px 18px', borderRadius: 14, background: T.accentLight, border: `1px solid oklch(0.88 0.04 138)`, display: 'flex', alignItems: 'center', gap: 14 }}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, color: T.accent }}>
@@ -532,7 +532,7 @@ export default function Inventory() {
                       )}
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontSize: 12, color: T.textMuted }}>
-                      {item.stock_updated_at ? fmtDate(item.stock_updated_at.slice(0, 10)) : '—'}
+                      {item.stock_updated_at ? fmtDate(item.stock_updated_at.slice(0, 10)) : '-'}
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>

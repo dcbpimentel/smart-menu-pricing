@@ -29,7 +29,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public — redirect to app if already logged in */}
+        {/* Public pages; signed-in users go straight to the app */}
         <Route
           path="landing"
           element={isLoggedIn() ? <Navigate to="/" replace /> : <Landing />}
@@ -39,7 +39,7 @@ export default function App() {
           element={isLoggedIn() ? <Navigate to="/" replace /> : <Login />}
         />
 
-        {/* Protected — redirect to login if not authenticated */}
+        {/* Pages that need sign-in */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index              element={<Dashboard />} />
           <Route path="ingredients" element={<Ingredients />} />

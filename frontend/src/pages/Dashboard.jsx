@@ -38,10 +38,10 @@ const T = {
   cardBorder:  '1px solid #EDE7DC',
 };
 
-// Chart line colors — one per recipe, cycling through these
+// Chart line colors, one per recipe (repeats after the last one)
 const LINE_COLORS = ['#4C5D3E', '#D97706', '#2563EB', '#7C3AED', '#DC2626', '#059669'];
 
-/* ── Stat card ─────────────────────────────────────────────────────────────── */
+/* Stat card */
 function StatCard({ label, value, sub, icon, accent, index = 0 }) {
   return (
     <div className="card-spring" style={{
@@ -63,7 +63,7 @@ function StatCard({ label, value, sub, icon, accent, index = 0 }) {
   );
 }
 
-/* ── Custom chart tooltip ─────────────────────────────────────────────────── */
+/* Custom chart tooltip */
 function CostTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
@@ -80,7 +80,7 @@ function CostTooltip({ active, payload, label }) {
   );
 }
 
-/* ── Onboarding ─────────────────────────────────────────────────────────────── */
+/* Onboarding */
 function Onboarding() {
   const steps = [
     { num: 1, to: '/ingredients', label: 'Add your ingredients',  desc: 'Enter the items you use in your dishes.' },
@@ -110,7 +110,7 @@ function Onboarding() {
   );
 }
 
-/* ── Main ────────────────────────────────────────────────────────────────────── */
+/* Main */
 export default function Dashboard() {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -171,7 +171,7 @@ export default function Dashboard() {
         const board = recipes.map(r => {
           const rows      = historyMap[r.id] || [];
           const latest    = rows[0] || null;
-          // actual_selling_price is saved per costing_output row — find the most recent one that has it
+          // The menu price is saved on a costing row, so use the newest row that has one
           const withPrice = rows.find(row => row.actual_selling_price != null);
           return {
             id:           r.id,
@@ -192,8 +192,8 @@ export default function Dashboard() {
         });
         setMenuBoard(board);
 
-        // ── Cost trend chart data (last 30 days) ──────────────────────────────
-        // Keep recipes that have ≥2 costing entries in the last 30 days
+        // Cost trend chart data (last 30 days)
+        // Recipes with at least one costing in the last 30 days
         const cutoff30 = daysAgoISO(30);
         const trendableRecipes = historyResults.filter(({ rows }) =>
           rows.filter(r => r.computed_at >= cutoff30).length >= 1
@@ -271,7 +271,7 @@ export default function Dashboard() {
       ];
     });
     const csvContent = [
-      [`Smart Menu Pricing — Menu Report — ${today}`],
+      [`Smart Menu Pricing Menu Report (${today})`],
       [],
       headers,
       ...rows,
@@ -297,10 +297,10 @@ export default function Dashboard() {
     setEditingId(null);
     setEditingVal('');
 
-    if (isNaN(parsed) || parsed <= 0) return; // empty or invalid — do nothing
-    if (!row?.outputId) return; // no computation yet — can't link the price
+    if (isNaN(parsed) || parsed <= 0) return; // empty or invalid, ignore
+    if (!row?.outputId) return; // no costing yet, so there is no row to save the price on
 
-    // Optimistically update the board so the UI feels instant
+    // Show the new price right away; reverted below if saving fails
     setMenuBoard(prev => prev.map(r => r.id === recipeId ? { ...r, menuPrice: parsed } : r));
 
     // Persist to the same DB column that Costing.jsx uses
@@ -332,7 +332,7 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ── Greeting ── */}
+      {/* Greeting */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text-primary)', lineHeight: 1.15 }}>
@@ -366,7 +366,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Price alert banner ── */}
+      {/* Price alert banner */}
       {!loading && priceAlerts.length > 0 && !dismissedAlert && (
         <div style={{ borderRadius: 18, padding: '15px 18px', background: 'linear-gradient(100deg, oklch(0.97 0.028 32) 0%, oklch(0.985 0.012 40) 100%)', border: '1px solid oklch(0.9 0.04 32)', display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 12, background: '#FFFFFF', boxShadow: '0 3px 10px rgba(160,60,40,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -374,7 +374,7 @@ export default function Dashboard() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'oklch(0.35 0.1 28)', marginBottom: 2 }}>
-              {priceAlerts.length} ingredient{priceAlerts.length !== 1 ? 's' : ''} have outdated or missing prices — your cost calculations may be off
+              {priceAlerts.length} ingredient{priceAlerts.length !== 1 ? 's' : ''} have outdated or missing prices, so your cost calculations may be off
             </div>
             <div style={{ fontSize: 12.5, color: 'oklch(0.52 0.09 30)' }}>
               {priceAlerts.slice(0, 3).map(a => a.name).join(', ')}{priceAlerts.length > 3 ? ` +${priceAlerts.length - 3} more` : ''}
@@ -389,11 +389,11 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Stat cards ── */}
+      {/* Stat cards */}
       {loading ? <SkeletonStats count={4} /> : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 12 }}>
 
-          {/* 1 — How many dishes are ready */}
+          {/* 1. Dishes with a computed cost */}
           <StatCard index={0}
             label="Dishes Priced"
             value={`${pricedRecipes} of ${totalRecipes}`}
@@ -402,7 +402,7 @@ export default function Dashboard() {
             icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="2" width="11" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 6h6M5 9h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}
           />
 
-          {/* 2 — Underpriced alarm: dishes where owner charges less than recommended */}
+          {/* 2. Dishes priced below the recommended price */}
           <StatCard index={1}
             label="Underpriced Dishes"
             value={underpricedCount > 0 ? underpricedCount : 'None'}
@@ -415,13 +415,13 @@ export default function Dashboard() {
             icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v7M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 13h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>}
           />
 
-          {/* 3 — Avg food cost %: the core restaurant health KPI */}
+          {/* 3. Average food cost % */}
           <StatCard index={2}
             label="Avg. Food Cost %"
-            value={avgFoodCostPct != null ? `${avgFoodCostPct.toFixed(1)}%` : '—'}
+            value={avgFoodCostPct != null ? `${avgFoodCostPct.toFixed(1)}%` : '-'}
             sub={
               avgFoodCostPct != null
-                ? `Target: ${prefs.targetFoodCostPct ?? 35}% — ${avgFoodCostPct <= (prefs.targetFoodCostPct ?? 35) ? 'within target' : 'above target, review pricing'}`
+                ? `Target: ${prefs.targetFoodCostPct ?? 35}%, ${avgFoodCostPct <= (prefs.targetFoodCostPct ?? 35) ? 'within target' : 'above target, review pricing'}`
                 : 'Compute dishes to see this'
             }
             accent={
@@ -433,7 +433,7 @@ export default function Dashboard() {
             icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12l3.5-4 3 2.5L12 5l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
           />
 
-          {/* 4 — Stale ingredient prices */}
+          {/* 4. Outdated ingredient prices */}
           <StatCard index={3}
             label="Price Alerts"
             value={priceAlerts.length > 0 ? priceAlerts.length : 'None'}
@@ -444,7 +444,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Menu Price Board ── */}
+      {/* Menu Price Board */}
       <div style={{ background: 'var(--card-bg)', border: T.cardBorder, borderRadius: 20, overflow: 'hidden' }}>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--divider)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
@@ -452,7 +452,7 @@ export default function Dashboard() {
               Menu Price Board
             </h2>
             <p style={{ margin: 0, fontSize: 12.5, color: T.textMuted }}>
-              Set and track your actual selling prices — the system suggestion is a guide, not a rule
+              Set and track your actual selling prices; the system suggestion is a guide, not a rule
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -524,7 +524,7 @@ export default function Dashboard() {
                         </div>
                       </td>
 
-                      {/* Your Price — PRIMARY: what the owner actually charges */}
+                      {/* Owner's menu price */}
                       <td style={{ padding: '14px 12px', textAlign: 'right' }}>
                         {editingId === row.id ? (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
@@ -575,7 +575,7 @@ export default function Dashboard() {
                         )}
                       </td>
 
-                      {/* System Suggestion — SECONDARY: calculated guidance only */}
+                      {/* Recommended price from the system */}
                       <td style={{ padding: '14px 22px 14px 12px', textAlign: 'right' }}>
                         {row.recPrice != null ? (
                           <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
@@ -625,12 +625,12 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── Cost Trend Chart ── */}
+      {/* Cost Trend Chart */}
       {!loading && trendData.length > 0 && (
         <div style={{ background: 'var(--card-bg)', border: T.cardBorder, borderRadius: 20, padding: '20px 22px' }}>
           <div style={{ marginBottom: 18 }}>
             <h2 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
-              Portion Cost Trend — Last 30 Days
+              Portion Cost Trend (Last 30 Days)
             </h2>
             <p style={{ margin: 0, fontSize: 12.5, color: T.textMuted }}>
               How much it costs to make one serving of each dish over time. Rising lines mean it's time to review your selling price.
@@ -677,20 +677,20 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Placeholder when no trend data yet ── */}
+      {/* Placeholder when no trend data yet */}
       {!loading && trendData.length === 0 && menuBoard.some(r => r.status === 'priced') && (
         <div style={{ background: 'var(--card-bg)', border: `1px dashed #DDD5C8`, borderRadius: 20, padding: '28px 24px', textAlign: 'center' }}>
           <div style={{ width: 44, height: 44, borderRadius: 14, background: T.accentLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 15l4-5 4 3.5L14 7l4 3" stroke={T.accent} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
-          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 5 }}>Cost Trend — Coming Soon</div>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 5 }}>Cost Trend (Coming Soon)</div>
           <div style={{ fontSize: 13, color: T.textMuted, maxWidth: 320, margin: '0 auto' }}>
             Compute costs for your dishes a few times over the coming days and a trend chart will appear here showing how your costs are changing.
           </div>
         </div>
       )}
 
-      {/* ── Price Alerts detail ── */}
+      {/* Price Alerts detail */}
       {!loading && priceAlerts.length > 0 && (
         <div style={{ background: 'var(--card-bg)', border: T.cardBorder, borderRadius: 20, padding: '18px 22px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>

@@ -30,10 +30,10 @@ app.get('/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok' }, message: '' });
 });
 
-// Public — no token required
+// Public routes, no token needed
 app.use('/api/auth', authRouter);
 
-// Protected — token required for all routes below
+// Everything below needs a valid token
 app.use('/api/users',       verifyToken, usersRouter);
 app.use('/api/ingredients', verifyToken, ingredientsRouter);
 app.use('/api/prices',      verifyToken, pricesRouter);

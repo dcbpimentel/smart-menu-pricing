@@ -3,10 +3,7 @@ import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import CommandPalette from './CommandPalette';
 import { ToastProvider } from './Toast';
 import FloatingCalculator from './FloatingCalculator';
-// Icons used in the sidebar navigation.
-// Only the icons for the 6 core pages + Settings + Help are kept here.
-// FiBarChart2 (Reports), FiArchive (Inventory), and FiUsers (Team) were
-// removed because those pages are outside the capstone paper's scope.
+// Sidebar icons
 import {
   FiHome, FiPackage, FiBook, FiDownload,
   FiDollarSign, FiTrendingUp, FiSettings, FiHelpCircle,
@@ -19,14 +16,8 @@ import { applyTheme } from '../lib/theme';
 export const TopbarContext = createContext({ setTopbarRight: () => {} });
 export const useTopbar = () => useContext(TopbarContext);
 
-// NAV_SECTIONS defines the sidebar menu.
-// MENU = the 6 core capstone features the evaluator will test.
-// SETUP = configuration pages (Settings) and documentation (Help & Guide).
-//
-// Removed from MENU: Reports (/reports), Inventory (/inventory)
-// Removed from SETUP: Team (/team)
-// Reason: these are outside the paper's scope and would confuse evaluators.
-// The pages still exist in the router — they are just hidden from the nav.
+// Sidebar menu. Reports, Inventory and Team are outside the paper's scope, so they
+// are left out of the menu (their routes still exist).
 const NAV_SECTIONS = [
   {
     label: 'MENU',
@@ -50,10 +41,7 @@ const NAV_SECTIONS = [
 
 const NAV_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
 
-// PAGE_META controls the topbar: kicker = small label above the title,
-// title = page name shown in the topbar and browser tab,
-// sub = short description shown below the title on desktop.
-// Only the pages visible in the nav need entries here.
+// Topbar label, title and subtitle of each page
 const PAGE_META = {
   '/':            { kicker: 'Overview',  title: 'Dashboard',       sub: 'Your menu pricing at a glance' },
   '/ingredients': { kicker: 'Data',     title: 'Ingredients',     sub: 'Manage your ingredient list and prices' },
@@ -123,7 +111,7 @@ export default function Layout() {
     if (isMobile) setMobileOpen(false);
   }, [location.pathname, isMobile]);
 
-  // Lets fixed elements outside this component (the floating calculator) step aside
+  // Body class so the floating calculator hides while the mobile menu is open
   useEffect(() => {
     document.body.classList.toggle('mobile-menu-open', isMobile && mobileOpen);
     return () => document.body.classList.remove('mobile-menu-open');
@@ -155,7 +143,7 @@ export default function Layout() {
 
   const sidebarContent = (
     <>
-      {/* Brand header — JBD Menu Grid logo */}
+      {/* Brand header with the JBD logo */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: iconOnly ? '18px 8px' : '22px 16px 16px', flexShrink: 0 }}>
         {iconOnly ? (
           <div style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -225,7 +213,7 @@ export default function Layout() {
         ))}
       </nav>
 
-      {/* Profile card — click to go to profile page */}
+      {/* Profile card, opens the Profile page */}
       <div style={{ borderTop: '1px solid var(--divider)', padding: '10px 8px calc(14px + env(safe-area-inset-bottom, 0px))', flexShrink: 0 }}>
         <Link
           to="/profile"
@@ -273,7 +261,7 @@ export default function Layout() {
   return (
     <ToastProvider>
     <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-    {/* Paper grain texture — gives premium editorial feel */}
+    {/* Grain texture overlay */}
     <div className="grain-overlay" aria-hidden="true" />
     <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--canvas-bg)' }}>
 
@@ -290,7 +278,7 @@ export default function Layout() {
         />
       )}
 
-      {/* Sidebar wrapper — relative container so edge-toggle can poke out */}
+      {/* Sidebar wrapper (relative, so the collapse tab can stick out) */}
       <div style={{
         position: 'relative',
         flexShrink: 0,
@@ -317,7 +305,7 @@ export default function Layout() {
           {sidebarContent}
         </aside>
 
-        {/* Desktop collapse tab — sits on the sidebar's right border */}
+        {/* Desktop collapse tab on the sidebar's right edge */}
         {!isMobile && (
           <button
             onClick={handleToggle}
@@ -358,9 +346,9 @@ export default function Layout() {
           flexShrink: 0,
         }}>
 
-          {/* Left: page info (toggle is now the sidebar edge-tab on desktop) */}
+          {/* Left: page title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
-            {/* Mobile hamburger — icon only, opens the fixed sidebar */}
+            {/* Mobile menu button */}
             {isMobile && (
               <button
                 onClick={handleToggle}

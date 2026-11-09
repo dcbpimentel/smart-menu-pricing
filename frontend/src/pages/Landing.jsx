@@ -17,7 +17,7 @@ const FEATURES = [
       </svg>
     ),
     title: 'Accurate dish costing',
-    desc: 'Calculate the exact ingredient cost per serving for every dish on your menu — no more guessing.',
+    desc: 'Calculate the exact ingredient cost per serving for every dish on your menu. No more guessing.',
   },
   {
     icon: (
@@ -180,7 +180,7 @@ export default function Landing() {
         borderTop: '1px solid var(--border)',
         flexShrink: 0,
       }}>
-        Smart Menu Pricing — Capstone Project · Kidapawan City, Philippines
+        Smart Menu Pricing · Capstone Project · Kidapawan City, Philippines
       </footer>
     </div>
   );

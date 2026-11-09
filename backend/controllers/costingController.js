@@ -187,7 +187,7 @@ const updateActualPrice = async (req, res) => {
   }
 };
 
-// GET /api/costing/summary — latest costing output per recipe (for Reports page)
+// GET /api/costing/summary: latest costing of each recipe (Reports page)
 const getSummary = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -225,7 +225,7 @@ const getSummary = async (req, res) => {
   }
 };
 
-// POST /api/costing/batch — compute costs for all recipes in one request
+// POST /api/costing/batch: compute every recipe in one request
 const batchCosting = async (req, res) => {
   try {
     const { pricing_setting_id, price_source } = req.body;

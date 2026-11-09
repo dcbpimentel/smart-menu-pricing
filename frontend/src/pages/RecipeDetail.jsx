@@ -112,7 +112,7 @@ function AddModal({ open, onClose, availableIngredients, recipeId, onAdded }) {
           )}
           <div>
             <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
-              Waste % <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-ultra-muted)' }}>— optional trim/prep loss</span>
+              Waste % <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-ultra-muted)' }}>(optional trim/prep loss)</span>
             </label>
             <div style={{ position: 'relative', width: 130 }}>
               <input type="number" min="0" max="99" step="0.1" placeholder="0"
@@ -408,7 +408,7 @@ export default function RecipeDetail() {
         {/* Two-column body */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
 
-          {/* ── LEFT: Pricing + actions ── */}
+          {/* LEFT: Pricing + actions */}
           <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Pricing panel */}
@@ -461,7 +461,7 @@ export default function RecipeDetail() {
                     </div>
                   ) : (
                     <p style={{ fontSize: 28, fontWeight: 800, color: savedMenuPrice ? 'var(--text-primary)' : '#C8BEAF', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
-                      {savedMenuPrice ? formatCurrency(savedMenuPrice) : '—'}
+                      {savedMenuPrice ? formatCurrency(savedMenuPrice) : '-'}
                     </p>
                   )}
                 </div>
@@ -490,7 +490,7 @@ export default function RecipeDetail() {
             )}
           </div>
 
-          {/* ── Actions card (below pricing, same left column) ── */}
+          {/* Actions card (below pricing, same left column) */}
           <div style={{ background: '#fff', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--divider)' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>Recipe Actions</span>
@@ -518,7 +518,7 @@ export default function RecipeDetail() {
           </div>
           </div>
 
-          {/* ── RIGHT: Ingredients panel ── */}
+          {/* RIGHT: Ingredients panel */}
           <div style={{ flex: '999 1 440px', minWidth: 0, background: '#fff', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden' }}>
 
             {/* Section header */}
@@ -602,7 +602,7 @@ export default function RecipeDetail() {
                       </div>
                       {/* Cost */}
                       <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: cost != null ? 'var(--text-primary)' : 'var(--text-ultra-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {cost != null ? formatCurrency(cost) : '—'}
+                        {cost != null ? formatCurrency(cost) : '-'}
                       </div>
                       {/* Actions */}
                       <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>

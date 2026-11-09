@@ -4,7 +4,7 @@ import Select from '../components/Select';
 import { SkeletonTable } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 
-/* ─── Design tokens ────────────────────────────────────────────────────────── */
+/* Design tokens */
 const T = {
   canvasBg:    '#FBF8F3',
   cardBg:      '#FFFFFF',
@@ -25,11 +25,11 @@ const T = {
 };
 
 const SOURCES = [
-  { value: 'dti', label: 'DTI — Department of Trade & Industry', description: 'dti.gov.ph price bulletins' },
-  { value: 'da',  label: 'DA — Department of Agriculture',       description: 'da.gov.ph price bulletins' },
+  { value: 'dti', label: 'DTI (Department of Trade & Industry)', description: 'dti.gov.ph price bulletins' },
+  { value: 'da',  label: 'DA (Department of Agriculture)',       description: 'da.gov.ph price bulletins' },
 ];
 
-/* ─── Status helpers ─────────────────────────────────────────────────────── */
+/* Status helpers */
 function getStatus(entry) {
   if (entry.matched === true && !entry.flagged) return 'matched';
   if (entry.matched === 'partial')              return 'partial';
@@ -63,7 +63,7 @@ const flagReasonText = (entry) => {
     : text;
 };
 
-/* ─── Sub-components ─────────────────────────────────────────────────────── */
+/* Sub-components */
 
 function StatusPill({ entry }) {
   const status = getStatus(entry);
@@ -217,7 +217,7 @@ function SecondaryBtn({ children, onClick, disabled, type = 'button', style: ext
   );
 }
 
-/* ─── Drop zone ─────────────────────────────────────────────────────────── */
+/* Drop zone */
 function Dropzone({ file, onFile, accept }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
@@ -361,7 +361,7 @@ function Dropzone({ file, onFile, accept }) {
   );
 }
 
-/* ─── Main page ─────────────────────────────────────────────────────────── */
+/* Main page */
 export default function Extraction() {
   const toast = useToast();
 
@@ -387,7 +387,7 @@ export default function Extraction() {
 
   const resetResults = () => { setEntries(null); setExtractMsg(''); setError(''); };
 
-  /* ── Extract ── */
+  /* Extract */
   const handleUploadExtract = async (e) => {
     e.preventDefault();
     if (!file) { setError('Please select a file.'); return; }
@@ -430,7 +430,7 @@ export default function Extraction() {
     }
   };
 
-  /* ── Save ── */
+  /* Save */
   const handleSave = async () => {
     if (!entries?.length) return;
     setSaving(true);
@@ -446,7 +446,7 @@ export default function Extraction() {
     }
   };
 
-  /* ── Counts ── */
+  /* Counts */
   const saveable    = entries?.filter(e => e.matched === true && !e.flagged).length ?? 0;
   const partial     = entries?.filter(e => e.matched === 'partial').length ?? 0;
   const noMatch     = entries?.filter(e => e.matched === false).length ?? 0;
@@ -454,7 +454,7 @@ export default function Extraction() {
   const needsReview = partial + noMatch + dataIssue;
   const totalRows   = entries?.length ?? 0;
 
-  /* ── Render ── */
+  /* Render */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <style>{`
@@ -464,7 +464,7 @@ export default function Extraction() {
         }
       `}</style>
 
-      {/* ── Tab bar + card ── */}
+      {/* Tab bar + card */}
       <div style={{
         background: T.cardBg,
         border: T.cardBorder,
@@ -718,12 +718,7 @@ export default function Extraction() {
             </PrimaryBtn>
           </div>
 
-          {/* Status legend — always visible above the results table.
-              Previously the only explanation was a conditional warning that appeared
-              only when some rows had problems. New users had no way to understand
-              the color-coded badges until something went wrong.
-              This legend is now always shown so users immediately know what each
-              status means before they try to save anything. */}
+          {/* Status legend */}
           <div style={{
             padding: '12px 22px',
             background: 'var(--table-header-bg)',
@@ -735,20 +730,18 @@ export default function Extraction() {
           }}>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 4 }}>Status legend:</span>
             {[
-              { label: 'Matched',      dot: '#4ade80', desc: 'Price found and linked to an ingredient — will be saved.' },
-              { label: 'Needs review', dot: '#fbbf24', desc: 'Fuzzy match found but confidence is low — verify before saving.' },
-              { label: 'No match',     dot: '#C5BCAF', desc: 'No ingredient found in your list — add the ingredient first, then re-import.' },
+              { label: 'Matched',      dot: '#4ade80', desc: 'Price found and linked to an ingredient. It will be saved.' },
+              { label: 'Needs review', dot: '#fbbf24', desc: 'Fuzzy match found but confidence is low. Check it before saving.' },
+              { label: 'No match',     dot: '#C5BCAF', desc: 'No ingredient found in your list. Add the ingredient first, then re-import.' },
             ].map(item => (
               <span key={item.label} title={item.desc} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: T.textSecond, cursor: 'default' }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.dot, flexShrink: 0, display: 'inline-block' }} />
-                <strong style={{ fontWeight: 600 }}>{item.label}</strong>
-                <span style={{ color: T.textMuted }}>— {item.desc}</span>
+                <strong style={{ fontWeight: 600 }}>{item.label}:</strong>
+                <span style={{ color: T.textMuted }}>{item.desc}</span>
               </span>
             ))}
           </div>
-          {/* Conditional warning — only shown when at least one row is not a clean match.
-              It tells the user exactly how many rows will be skipped so there are no
-              surprises after clicking Save. */}
+          {/* Warning when some rows will not be saved */}
           {needsReview > 0 && (
             <div style={{
               padding: '8px 22px',
@@ -832,7 +825,7 @@ export default function Extraction() {
                         <td style={{ padding: '13px 12px', color: T.textSecond }}>
                           {entry.matched_name
                             ? entry.matched_name
-                            : <span style={{ color: '#D5CCBF', fontStyle: 'italic' }}>—</span>
+                            : <span style={{ color: '#D5CCBF', fontStyle: 'italic' }}>-</span>
                           }
                         </td>
                         <td style={{ padding: '13px 12px' }}>
@@ -845,7 +838,7 @@ export default function Extraction() {
                             padding: '3px 8px',
                             borderRadius: 8,
                           }}>
-                            {entry.normalized_unit || '—'}
+                            {entry.normalized_unit || '-'}
                           </span>
                         </td>
                         <td style={{ padding: '13px 12px', textAlign: 'right', fontFamily: 'monospace', color: T.textPrimary, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>

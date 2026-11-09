@@ -290,7 +290,7 @@ export default function Recipes() {
           );
           })}
 
-          {/* Add Recipe ghost card — only shown when recipes already exist */}
+          {/* "Add recipe" card, shown once there are recipes */}
           {recipes.length > 0 && <button onClick={openAdd}
             style={{ minHeight: 280, borderRadius: 22, border: '1.5px dashed var(--input-border)', background: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', transition: 'all 220ms ease', padding: 24 }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--card-bg)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}

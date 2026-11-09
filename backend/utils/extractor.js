@@ -7,7 +7,7 @@ const pdf             = require('pdf-parse');
 const { createWorker } = require('tesseract.js');
 const { normalizeUnit, getConversionFactor } = require('./units');
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+// Shared helpers
 
 const HEADER_KEYWORDS = ['commodity', 'price', 'unit', 'item', 'description', 'classification', 'variety'];
 const isHeaderCell = (text) => HEADER_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
@@ -27,7 +27,7 @@ const parseUnitFromPriceString = (text) => {
   return m ? m[1].toLowerCase() : null;
 };
 
-// ── HTML date detection ───────────────────────────────────────────────────────
+// HTML date detection
 
 const MONTH_MAP = { january:1,february:2,march:3,april:4,may:5,june:6,
                     july:7,august:8,september:9,october:10,november:11,december:12 };
@@ -74,7 +74,7 @@ const extractPageDate = ($) => {
   return { date: raw ?? new Date().toISOString().slice(0, 10), dateAssumed: !raw };
 };
 
-// ── HTML column detection ─────────────────────────────────────────────────────
+// HTML column detection
 
 const detectColumns = (headerCells) => {
   const cols = { name: 0, unit: null, price: null };
@@ -89,7 +89,7 @@ const detectColumns = (headerCells) => {
   return cols;
 };
 
-// ── HTML extraction ───────────────────────────────────────────────────────────
+// HTML extraction
 
 const parseHTMLString = (html, source) => {
   const $ = cheerio.load(html);
@@ -195,7 +195,7 @@ const extractFromHTML = async (url, source) => {
   }
 };
 
-// ── Shared plain-text line parser (PDF + OCR) ─────────────────────────────────
+// Shared plain-text line parser (PDF + OCR)
 
 // Standalone unit abbreviations
 const UNIT_RE  = /\b(kg|g|mL|ml|L|pcs?|bundle|pack)\b/i;
@@ -214,7 +214,7 @@ const parsePriceLine = (line, source, date, dateAssumed = false) => {
   let rawName = priceMatch ? line.slice(0, priceMatch.index) : line;
   rawName = rawName
     .replace(UNIT_RE, '')
-    .replace(/[₱₱,\-–—\/|\\]+/g, ' ')
+    .replace(/[₱₱,\-–\u2014\/|\\]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -232,7 +232,7 @@ const parseLines = (text, source, date, dateAssumed = false) =>
     .filter(looksLikePriceRow)
     .map((line) => parsePriceLine(line, source, date, dateAssumed));
 
-// ── DA Bantay Presyo layout ───────────────────────────────────────────────────
+// DA Bantay Presyo layout
 // In DA price bulletins (Daily Price Index, Weekly Average Retail Prices) pdf-parse
 // returns each table row as commodity + specification + unit with no spaces between
 // them ("Whole Chicken, LocalFully Dressedkg"), and the price on the next line
@@ -301,7 +301,7 @@ const parseDALayout = (text, source, date, dateAssumed = false) => {
   return rows;
 };
 
-// ── PDF extraction ────────────────────────────────────────────────────────────
+// PDF extraction
 
 const extractFromPDF = async (filePath, source) => {
   try {
@@ -318,7 +318,7 @@ const extractFromPDF = async (filePath, source) => {
   }
 };
 
-// ── OCR (image) extraction ────────────────────────────────────────────────────
+// OCR (image) extraction
 
 const OCR_WHITELIST =
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ₱/.,()-';
@@ -340,7 +340,7 @@ const extractFromImage = async (filePath, source) => {
   }
 };
 
-// ── Batch processing: normalize + match every raw entry ──────────────────────
+// Batch processing: normalize + match every raw entry
 
 const { normalizeEntry }    = require('./normalizer');
 const { matchToIngredient } = require('./matcher');

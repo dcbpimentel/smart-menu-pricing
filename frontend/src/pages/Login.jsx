@@ -35,7 +35,7 @@ export default function Login() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#FDF8F2' }}>
 
-      {/* ── Login success overlay ── */}
+      {/* Login success overlay */}
       {success && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
@@ -69,7 +69,7 @@ export default function Login() {
         </div>
       )}
 
-      {/* ── Left brand panel ── */}
+      {/* Left brand panel */}
       <div className="login-brand login-brand-animate" style={{
         width: '44%', flexShrink: 0,
         background: 'linear-gradient(155deg, #1E4A16 0%, #122B0C 60%, #0D1F08 100%)',
@@ -83,7 +83,7 @@ export default function Login() {
 
         {/* Logo + headline */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Brand mark — JBD Menu Grid */}
+          {/* JBD brand mark */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
             <svg width="42" height="42" viewBox="0 0 28 28" fill="none">
               <circle cx="4"  cy="4"  r="3.5" fill="rgba(255,255,255,0.18)"/>
@@ -130,7 +130,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── Right form panel ── */}
+      {/* Right form panel */}
       <div style={{
         flex: 1,
         display: 'flex',

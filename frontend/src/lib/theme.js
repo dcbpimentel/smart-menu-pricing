@@ -1,7 +1,7 @@
 export const THEMES = {
   light: {
     name: 'Light',
-    description: "Boyd's daytime — warm cream canvas with forest green accent",
+    description: "Boyd's daytime: warm cream canvas with forest green accent",
     isDark: false,
     darkCounterpart: 'dark',
     vars: {
@@ -36,7 +36,7 @@ export const THEMES = {
   },
   dark: {
     name: 'Dark',
-    description: "Boyd's night — warm espresso canvas with vibrant green accent",
+    description: "Boyd's night: warm espresso canvas with vibrant green accent",
     isDark: true,
     lightCounterpart: 'light',
     vars: {

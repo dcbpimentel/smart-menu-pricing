@@ -9,7 +9,7 @@ import { formatCurrency, localISODate } from '../lib/format';
 import { INGREDIENT_UNITS as UNITS, MANUAL_PRICE_ORIGINS } from '../lib/constants';
 
 const fmtDate = (d) => {
-  if (!d) return '—';
+  if (!d) return '-';
   const [y, m, day] = d.split('-').map(Number);
   return new Date(y, m - 1, day).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
 };
@@ -428,7 +428,7 @@ export default function Ingredients() {
          )}
       </div>
 
-      {/* ── Add Ingredient Modal ── */}
+      {/* Add Ingredient Modal */}
       {addIngOpen && (
         <Modal onClose={() => setAddIngOpen(false)}>
           <ModalHeader title="Add Ingredient" onClose={() => setAddIngOpen(false)} />
@@ -516,7 +516,7 @@ export default function Ingredients() {
         </Modal>
       )}
 
-      {/* ── Ingredient Detail Modal ── */}
+      {/* Ingredient Detail Modal */}
       {detailOpen && detailIng && (
         <Modal onClose={() => setDetailOpen(false)} wide>
           <ModalHeader
@@ -548,7 +548,7 @@ export default function Ingredients() {
                 </div>
               ) : (
                 <div style={{ background: 'var(--table-header-bg)', borderRadius: 12, padding: '14px 16px', border: '1px solid var(--border)', color: 'var(--text-ultra-muted)', fontSize: 13.5 }}>
-                  No price recorded yet — add one below.
+                  No price recorded yet. Add one below.
                 </div>
               )}
             </div>
@@ -641,7 +641,7 @@ export default function Ingredients() {
                )}
             </div>
 
-            {/* Edit Details — expandable */}
+            {/* Edit details (expandable) */}
             <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--divider)' }}>
               <button
                 onClick={() => { setShowEditForm(v => !v); setFormError(null); }}

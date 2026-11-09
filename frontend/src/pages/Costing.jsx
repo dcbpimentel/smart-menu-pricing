@@ -11,7 +11,7 @@ import { formatCurrency, formatPct } from '../lib/format';
 import { getConversionFactor, unitOptionsFor } from '../lib/units';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-/* ─── Design tokens ────────────────────────────────────────────────────────── */
+/* Design tokens */
 const T = {
   accent:      '#4C5D3E',
   accentLight: 'oklch(0.955 0.021 138)',
@@ -40,7 +40,7 @@ const SOURCE_BADGE = {
   manual: { bg: 'oklch(0.975 0.04 85)',  color: 'oklch(0.50 0.12 85)', label: 'Manual' },
 };
 
-/* ─── Sub-components ─────────────────────────────────────────────────────── */
+/* Sub-components */
 
 function StatCard({ label, value, sub, accent, index = 0 }) {
   return (
@@ -71,7 +71,7 @@ function StatCard({ label, value, sub, accent, index = 0 }) {
 }
 
 function SourceBadge({ src }) {
-  if (!src) return <span style={{ color: '#D5CCBF', fontSize: 12 }}>—</span>;
+  if (!src) return <span style={{ color: '#D5CCBF', fontSize: 12 }}>-</span>;
   const s = SOURCE_BADGE[src] ?? { bg: '#F3EDE4', color: T.textMuted, label: src };
   return (
     <span style={{
@@ -277,7 +277,7 @@ export default function Costing() {
       if (!data.saved) {
         toast.error(res.data.message || 'Cost not computed');
       } else if (data.is_duplicate) {
-        toast.info('No changes detected — cost is already up to date');
+        toast.info('No changes detected, cost is already up to date');
       } else {
         toast.success('Cost computed and saved successfully');
       }
@@ -328,10 +328,10 @@ export default function Costing() {
     } else if (newCount > 0) {
       toast.success(`${newCount} recipe cost${newCount !== 1 ? 's' : ''} saved successfully`);
     } else if (dupCount > 0) {
-      toast.info('All costs already up to date — no changes detected');
+      toast.info('All costs already up to date, no changes detected');
     }
     if (errors.length > 0) {
-      toast.error(`${errors.length} recipe${errors.length !== 1 ? 's' : ''} not computed — see the list below`);
+      toast.error(`${errors.length} recipe${errors.length !== 1 ? 's' : ''} not computed, see the list below`);
     }
     if (recipeId) fetchHistory(recipeId);
   };
@@ -347,12 +347,12 @@ export default function Costing() {
       <tr>
         <td>${row.name}</td>
         <td style="text-align:right;font-family:monospace">${row.quantity}</td>
-        ${row.waste_pct > 0 ? `<td style="text-align:center">${row.waste_pct}%</td><td style="text-align:right;font-family:monospace">${row.effective_quantity ?? row.quantity}</td>` : `<td style="text-align:center;color:#ccc">—</td><td style="text-align:right;font-family:monospace;color:#999">${row.quantity}</td>`}
+        ${row.waste_pct > 0 ? `<td style="text-align:center">${row.waste_pct}%</td><td style="text-align:right;font-family:monospace">${row.effective_quantity ?? row.quantity}</td>` : `<td style="text-align:center;color:#ccc">-</td><td style="text-align:right;font-family:monospace;color:#999">${row.quantity}</td>`}
         <td>${row.unit}</td>
-        <td style="text-align:right">${row.missing_price ? '<em style="color:#999">no price</em>' : '₱' + (row.unit_price?.toFixed(2) ?? '—')}</td>
-        <td style="text-align:right;font-weight:700">${row.missing_price ? '—' : '₱' + (row.ingredient_cost?.toFixed(2) ?? '—')}</td>
+        <td style="text-align:right">${row.missing_price ? '<em style="color:#999">no price</em>' : '₱' + (row.unit_price?.toFixed(2) ?? '-')}</td>
+        <td style="text-align:right;font-weight:700">${row.missing_price ? '-' : '₱' + (row.ingredient_cost?.toFixed(2) ?? '-')}</td>
       </tr>`).join('');
-    w.document.write(`<!DOCTYPE html><html><head><title>Cost Sheet — ${result.recipe_name}</title>
+    w.document.write(`<!DOCTYPE html><html><head><title>Cost Sheet: ${result.recipe_name}</title>
     <style>
       *{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;max-width:740px;margin:40px auto;color:#24201C;padding:0 20px}
       h1{font-size:22px;font-weight:700;margin:0 0 4px}
@@ -370,9 +370,9 @@ export default function Costing() {
     <h1>${result.recipe_name}</h1>
     <div class="meta">Generated ${new Date().toLocaleDateString('en-PH',{dateStyle:'long'})} &middot; ${result.servings} serving${result.servings !== 1 ? 's' : ''} per batch</div>
     <div class="stats">
-      <div class="stat"><div class="stat-label">Recipe Cost</div><div class="stat-value">₱${result.recipe_cost?.toFixed(2) ?? '—'}</div></div>
-      <div class="stat"><div class="stat-label">Portion Cost</div><div class="stat-value">₱${result.portion_cost?.toFixed(2) ?? '—'}</div></div>
-      <div class="stat"><div class="stat-label">Recommended Price</div><div class="stat-value rec">₱${result.recommended_price?.toFixed(2) ?? '—'}</div></div>
+      <div class="stat"><div class="stat-label">Recipe Cost</div><div class="stat-value">₱${result.recipe_cost?.toFixed(2) ?? '-'}</div></div>
+      <div class="stat"><div class="stat-label">Portion Cost</div><div class="stat-value">₱${result.portion_cost?.toFixed(2) ?? '-'}</div></div>
+      <div class="stat"><div class="stat-label">Recommended Price</div><div class="stat-value rec">₱${result.recommended_price?.toFixed(2) ?? '-'}</div></div>
     </div>
     <table><thead><tr><th>Ingredient</th><th style="text-align:right">Qty</th><th style="text-align:center">Waste</th><th style="text-align:right">Eff. Qty</th><th>Unit</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Cost</th></tr></thead>
     <tbody>${rows}</tbody></table>
@@ -388,7 +388,7 @@ export default function Costing() {
   });
 
   const fmtSource = (s) => {
-    if (!s) return '—';
+    if (!s) return '-';
     const [src, date] = s.split(':');
     const label = { dti: 'DTI', da: 'DA', manual: 'Manual', latest: 'Latest' }[src] ?? src.toUpperCase();
     if (!date) return label;
@@ -523,7 +523,7 @@ export default function Costing() {
         .cst-compute-btn:active:not(:disabled) { transform: translateY(0); }
       `}</style>
 
-      {/* ── Compute form ── */}
+      {/* Compute form */}
       <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, overflow: 'hidden' }}>
         <div style={{
           padding: '18px 22px',
@@ -679,7 +679,7 @@ export default function Costing() {
         </form>
       </div>
 
-      {/* ── Batch results ── */}
+      {/* Batch results */}
       {batchResults && !batchRunning && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, overflow: 'hidden', animation: 'riseIn 420ms cubic-bezier(0.22,1,0.36,1) both' }}>
           <div style={{ padding: '14px 22px', borderBottom: '1px solid #F3EDE4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -771,18 +771,18 @@ export default function Costing() {
         </div>
       )}
 
-      {/* ── Computing skeleton ── */}
+      {/* Computing skeleton */}
       {computing && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, padding: 24 }}>
           <SkeletonStats count={3} />
         </div>
       )}
 
-      {/* ── Results ── */}
+      {/* Results */}
       {result && !computing && (
         <div ref={resultRef} style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'riseIn 420ms cubic-bezier(0.22,1,0.36,1) both' }}>
 
-          {/* Hero card — recommended price */}
+          {/* Recommended price card */}
           <div style={{
             background: 'linear-gradient(160deg, oklch(0.30 0.032 145) 0%, oklch(0.228 0.026 150) 100%)',
             borderRadius: 20,
@@ -866,9 +866,9 @@ export default function Costing() {
               value={
                 result.portion_cost != null && result.recommended_price != null && result.recommended_price > 0
                   ? `${((result.portion_cost / result.recommended_price) * 100).toFixed(1)}%`
-                  : '—'
+                  : '-'
               }
-              sub={`Target: ${result.pricing_setting?.target_food_cost_pct ?? '—'}%`}
+              sub={`Target: ${result.pricing_setting?.target_food_cost_pct ?? '-'}%`}
               accent={
                 result.portion_cost != null && result.recommended_price != null && result.recommended_price > 0
                   ? ((result.portion_cost / result.recommended_price) * 100) <= (result.pricing_setting?.target_food_cost_pct ?? 35)
@@ -883,12 +883,12 @@ export default function Costing() {
               value={
                 result.recommended_price != null && result.portion_cost != null
                   ? formatCurrency(result.recommended_price - result.portion_cost)
-                  : '—'
+                  : '-'
               }
               sub="Recommended price − portion cost"
               accent={T.accent}
             />
-            {/* Your actual menu price — always show so the owner sees the gap */}
+            {/* Owner's menu price, always shown so the gap is visible */}
             {(() => {
               const mp = savedMenuPrice ?? (actualPrice && parseFloat(actualPrice) > 0 ? parseFloat(actualPrice) : null);
               const gap = mp != null && result.recommended_price != null ? mp - result.recommended_price : null;
@@ -918,7 +918,7 @@ export default function Costing() {
             })()}
           </div>
 
-          {/* Menu price — show whenever there's a result OR an already-saved price */}
+          {/* Menu price input, shown when there is a result or a saved price */}
           {(result.portion_cost != null || savedMenuPrice) && (
             <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 18, padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
@@ -1006,7 +1006,7 @@ export default function Costing() {
                   </div>
                   <p style={{ margin: '8px 0 0', fontSize: 12, color: T.textMuted }}>
                     {savedMenuPrice
-                      ? 'Update the price you charge on the menu — reflected on the Recipe page too.'
+                      ? 'Update the price you charge on the menu. It also shows on the Recipe page.'
                       : 'Set the price you charge to compare against the recommendation above.'}
                   </p>
                 </>
@@ -1195,7 +1195,7 @@ export default function Costing() {
                         </td>
                         <td style={{ padding: '13px 12px', textAlign: 'right' }}>
                           {row.missing_price ? (
-                            <span style={{ color: '#D5CCBF', fontSize: 13 }}>—</span>
+                            <span style={{ color: '#D5CCBF', fontSize: 13 }}>-</span>
                           ) : (
                             <div>
                               <div style={{ fontWeight: 700, color: T.textPrimary, fontVariantNumeric: 'tabular-nums', fontSize: 13.5, marginBottom: 4 }}>
@@ -1214,7 +1214,7 @@ export default function Costing() {
                         </td>
                         <td style={{ padding: '13px 12px', textAlign: 'center' }}>
                           {row.missing_price
-                            ? <span style={{ color: '#D5CCBF', fontSize: 12 }}>—</span>
+                            ? <span style={{ color: '#D5CCBF', fontSize: 12 }}>-</span>
                             : <SourceBadge src={row.price_source} />
                           }
                         </td>
@@ -1282,7 +1282,7 @@ export default function Costing() {
                                 value={unit}
                                 onChange={v => setAddForm(f => ({ ...f, unit: v }))}
                                 options={(selected ? unitOptionsFor(selected.unit) : []).map(u => ({ value: u, label: u }))}
-                                placeholder="—"
+                                placeholder="-"
                                 disabled={!selected}
                               />
                             </div>
@@ -1313,7 +1313,7 @@ export default function Costing() {
         </div>
       )}
 
-      {/* ── Cost Trend Chart ── */}
+      {/* Cost Trend Chart */}
       {history.length > 0 && history.length < 2 && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, padding: '20px 22px' }}>
           <h4 style={{ fontSize: 13, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 8px' }}>
@@ -1366,7 +1366,7 @@ export default function Costing() {
         </div>
       )}
 
-      {/* Persistent menu price badge — visible when no active computation result */}
+      {/* Saved menu price, shown when there is no result on screen */}
       {!result && !computing && savedMenuPrice && (
         <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 18, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: T.textMuted, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Menu Price</span>
@@ -1377,7 +1377,7 @@ export default function Costing() {
         </div>
       )}
 
-      {/* ── Costing History ── */}
+      {/* Costing History */}
       <div style={{ background: '#FFFFFF', border: '1px solid #EFE8DE', borderRadius: 20, overflow: 'hidden' }}>
         <div style={{
           padding: '14px 22px',

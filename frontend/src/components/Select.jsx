@@ -131,7 +131,7 @@ export default function Select({
         </svg>
       </button>
 
-      {/* Dropdown panel — rendered in a portal to escape overflow:hidden ancestors */}
+      {/* Dropdown panel, rendered in a portal so overflow:hidden parents don't cut it off */}
       {open && createPortal(
         <div
           ref={portalRef}

@@ -22,7 +22,7 @@ function inits(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/* ── Avatar ── */
+/* Avatar */
 function Avatar({ name, role, size = 44 }) {
   const isAdmin = role === 'admin';
   return (
@@ -42,7 +42,7 @@ function Avatar({ name, role, size = 44 }) {
   );
 }
 
-/* ── Role pill ── */
+/* Role pill */
 function RolePill({ role }) {
   const isAdmin = role === 'admin';
   return (
@@ -69,7 +69,7 @@ function RolePill({ role }) {
   );
 }
 
-/* ── Status dot ── */
+/* Status dot */
 function StatusDot({ active }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: active ? 'oklch(0.44 0.12 145)' : '#9CA3AF' }}>
@@ -83,7 +83,7 @@ function StatusDot({ active }) {
   );
 }
 
-/* ── Text input ── */
+/* Text input */
 function TextInput({ value, onChange, type = 'text', placeholder, suffix, autoComplete, disabled }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -120,7 +120,7 @@ function TextInput({ value, onChange, type = 'text', placeholder, suffix, autoCo
   );
 }
 
-/* ── Eye toggle ── */
+/* Eye toggle */
 function EyeBtn({ show, onToggle }) {
   return (
     <button type="button" onClick={onToggle}
@@ -139,7 +139,7 @@ function EyeBtn({ show, onToggle }) {
   );
 }
 
-/* ── Native role select — more reliable than a custom dropdown inside a modal ── */
+/* Native <select> for the role; a custom dropdown misbehaves inside the modal */
 function RoleSelect({ value, onChange }) {
   const [focused, setFocused] = useState(false);
   return (
@@ -173,7 +173,7 @@ function RoleSelect({ value, onChange }) {
   );
 }
 
-/* ── Field label wrapper ── */
+/* Field label wrapper */
 function Field({ label, hint, children }) {
   return (
     <div>
@@ -184,7 +184,7 @@ function Field({ label, hint, children }) {
   );
 }
 
-/* ── Error message ── */
+/* Error message */
 function ErrorMsg({ msg }) {
   if (!msg) return null;
   return (
@@ -194,14 +194,8 @@ function ErrorMsg({ msg }) {
   );
 }
 
-/*
- * ── Modal — fixed header + scrollable body + pinned footer ──
- * Key design decisions:
- * - z-index: 9999 ensures it's above the sidebar (z-index ~30-50) and topbar
- * - align-items: flex-start + padding-top: 60px so the modal is never clipped at the top
- * - flex column layout: header (fixed) + body (scrollable) + footer (fixed)
- * - No avatar in the sheet body — avatar goes inline in the header next to the title
- */
+/* Modal with a fixed header and footer and a scrolling body.
+   z-index 9999 keeps it above the sidebar and topbar. */
 function Modal({ title, subtitle, avatarName, avatarRole, onClose, footer, children }) {
   return createPortal(
     <div
@@ -226,7 +220,7 @@ function Modal({ title, subtitle, avatarName, avatarRole, onClose, footer, child
           animation: 'modalIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
         }}
       >
-        {/* ── Sticky header ── */}
+        {/* Sticky header */}
         <div style={{
           padding: '18px 20px 16px',
           display: 'flex', alignItems: 'center',
@@ -268,12 +262,12 @@ function Modal({ title, subtitle, avatarName, avatarRole, onClose, footer, child
           </button>
         </div>
 
-        {/* ── Scrollable body — flex:1 + minHeight:0 lets it shrink within maxHeight ── */}
+        {/* Scrolling body (minHeight: 0 lets it shrink inside maxHeight) */}
         <div style={{ padding: '20px 20px 4px', display: 'flex', flexDirection: 'column', gap: 14, flex: 1, overflowY: 'auto', minHeight: 0 }}>
           {children}
         </div>
 
-        {/* ── Pinned footer — always visible, never scrolls ── */}
+        {/* Footer, always visible */}
         <div style={{ padding: '14px 20px 20px', display: 'flex', gap: 8, flexShrink: 0 }}>
           {footer}
         </div>
@@ -283,7 +277,7 @@ function Modal({ title, subtitle, avatarName, avatarRole, onClose, footer, child
   );
 }
 
-/* ── Skeleton row ── */
+/* Skeleton row */
 function SkeletonRow() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px' }}>
@@ -393,7 +387,7 @@ export default function Team() {
     }
   };
 
-  /* ── Non-admin guard ── */
+  /* Non-admin guard */
   if (!isAdmin) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 360, gap: 14, textAlign: 'center', padding: 32 }}>
@@ -420,7 +414,7 @@ export default function Team() {
   return (
     <div style={{ maxWidth: 700, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ── Toast ── */}
+      {/* Toast */}
       {toastMsg && (
         <div style={{
           position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
@@ -435,7 +429,7 @@ export default function Team() {
         </div>
       )}
 
-      {/* ── Header row ── */}
+      {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
@@ -451,7 +445,7 @@ export default function Team() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             }}>
               <span style={{ fontSize: 20, fontWeight: 800, color: T.textPrimary, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
-                {loading ? '—' : value}
+                {loading ? '-' : value}
               </span>
               <span style={{ fontSize: 11.5, fontWeight: 600, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {label}
@@ -479,7 +473,7 @@ export default function Team() {
         </button>
       </div>
 
-      {/* ── Member list ── */}
+      {/* Member list */}
       <div style={{ background: '#FFFFFF', border: T.cardBorder, borderRadius: 20, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div style={{
           padding: '13px 20px 11px', borderBottom: T.cardBorder, background: '#FDFAF6',
@@ -617,7 +611,7 @@ export default function Team() {
         })}
       </div>
 
-      {/* ── Add member modal ── */}
+      {/* Add member modal */}
       {showAdd && (
         <Modal
           title="Add team member"
@@ -646,7 +640,7 @@ export default function Team() {
                 autoComplete="name"
               />
             </Field>
-            <Field label="Username" hint="Used to sign in — no spaces.">
+            <Field label="Username" hint="Used to sign in. No spaces.">
               <TextInput
                 value={addForm.username}
                 onChange={e => setAddForm(f => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, '') }))}
@@ -672,7 +666,7 @@ export default function Team() {
         </Modal>
       )}
 
-      {/* ── Edit member modal ── */}
+      {/* Edit member modal */}
       {editTarget && (
         <Modal
           title={editTarget.full_name}

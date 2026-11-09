@@ -129,7 +129,7 @@ function PasswordStrength({ password }) {
   );
 }
 
-/* ── Section wrapper ── */
+/* Section wrapper */
 function Section({ label, children }) {
   return (
     <div style={{ padding: '36px 0' }}>
@@ -141,7 +141,7 @@ function Section({ label, children }) {
   );
 }
 
-/* ── Save button — small, right-aligned ── */
+/* Small right-aligned save button */
 function SaveBtn({ loading, label = 'Save changes' }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
@@ -170,7 +170,7 @@ function SaveBtn({ loading, label = 'Save changes' }) {
   );
 }
 
-/* ── Account info row ── */
+/* Account info row */
 function InfoRow({ label, children, last }) {
   return (
     <div style={{
@@ -184,7 +184,7 @@ function InfoRow({ label, children, last }) {
   );
 }
 
-/* ── Form field row ── */
+/* Form field row */
 function FormRow({ label, hint, children, last }) {
   return (
     <div style={{ paddingBottom: last ? 0 : 18, marginBottom: last ? 0 : 18, borderBottom: last ? 'none' : `1px solid ${T.divider}` }}>
@@ -276,7 +276,7 @@ export default function Profile() {
   return (
     <div style={{ maxWidth: 560 }}>
 
-      {/* ── Logout overlay ── */}
+      {/* Logout overlay */}
       {loggingOut && createPortal(
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
@@ -298,7 +298,7 @@ export default function Profile() {
         document.body
       )}
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <div style={{
         background: 'linear-gradient(145deg, #1A3E12 0%, #2A6E3A 55%, #3A8A50 100%)',
         borderRadius: 20,
@@ -351,10 +351,10 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* ── Settings document ── */}
+      {/* Settings document */}
       <div>
 
-        {/* ── Profile ── */}
+        {/* Profile */}
         <Section label="Profile">
           <FormRow label="Username">
             <div style={{
@@ -388,7 +388,7 @@ export default function Profile() {
 
         <div style={{ height: 1, background: T.divider }} />
 
-        {/* ── Account ── */}
+        {/* Account */}
         <Section label="Account">
           <InfoRow label="Username">@{username}</InfoRow>
           <InfoRow label="Role">{role}</InfoRow>
@@ -409,7 +409,7 @@ export default function Profile() {
 
         <div style={{ height: 1, background: T.divider }} />
 
-        {/* ── Security ── */}
+        {/* Security */}
         <Section label="Security">
           <form onSubmit={handlePasswordSave}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -452,7 +452,7 @@ export default function Profile() {
 
         <div style={{ height: 1, background: T.divider }} />
 
-        {/* ── Session ── */}
+        {/* Session */}
         <Section label="Session">
           {/* Who's signed in */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>

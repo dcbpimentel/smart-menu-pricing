@@ -319,7 +319,7 @@ export default function Help() {
   return (
     <div style={{ maxWidth: 860 }}>
 
-      {/* Subtitle — page title is already shown in the topbar */}
+      {/* Subtitle (the page title is already in the topbar) */}
       <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', margin: '0 0 20px' }}>
         Select a topic to get started.
       </p>

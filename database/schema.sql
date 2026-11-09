@@ -1,5 +1,5 @@
 -- ============================================================
--- Smart Menu Pricing System — MySQL Schema
+-- Smart Menu Pricing System: MySQL Schema
 -- Engine: InnoDB | Charset: utf8mb4 | Collation: utf8mb4_unicode_ci
 -- ============================================================
 
@@ -83,9 +83,8 @@ CREATE TABLE IF NOT EXISTS recipes (
 --    Junction table: which ingredients go into each recipe,
 --    in what quantity and unit.
 --
---    NOTE: `unit` here is the recipe-level unit (may differ
---    from the ingredient base unit — normalization happens
---    in the costing layer).
+--    `unit` is the unit used in the recipe. It can differ from
+--    the ingredient's unit; costing converts it.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS recipe_ingredients (
   id             INT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -160,7 +159,7 @@ CREATE TABLE IF NOT EXISTS costing_outputs (
   recipe_cost          DECIMAL(10,2)    NOT NULL COMMENT 'Total cost for the full recipe batch',
   portion_cost         DECIMAL(10,2)    NOT NULL COMMENT 'Cost per single serving',
   recommended_price    DECIMAL(10,2)    NOT NULL COMMENT 'Suggested selling price after applying pricing rule',
-  actual_selling_price DECIMAL(10,2)    NULL     COMMENT 'Actual price the owner charges — set manually after computation',
+  actual_selling_price DECIMAL(10,2)    NULL     COMMENT 'Actual price the owner charges, set manually after computation',
   applied_price_source VARCHAR(50)      NULL     COMMENT 'Snapshot label: e.g. "dti:2025-06-01" or "manual"',
   price_snapshot       JSON             NULL     COMMENT 'Per-ingredient prices used: price id, source, date, unit price, cost',
   computed_at          DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -267,7 +266,7 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci
-  COMMENT='Inventory ledger — every stock change with reason and date';
+  COMMENT='Inventory ledger: every stock change with reason and date';
 
 
 SET FOREIGN_KEY_CHECKS = 1;

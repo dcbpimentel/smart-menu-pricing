@@ -10,7 +10,7 @@ const unitMismatchError = (rows) => {
   return err;
 };
 
-// ── Rounding ──────────────────────────────────────────────────────────────────
+// Rounding
 // Costs are carried at full precision through every step and rounded only for
 // display/storage. The owner's rounding rule applies to the final recommended
 // price and never to intermediate values (paper §3.3, sixth layer).
@@ -91,7 +91,7 @@ const loadRecipe = async (recipeId, db) => {
   return { recipe, ingredients };
 };
 
-// ── computeRecipeCost ─────────────────────────────────────────────────────────
+// computeRecipeCost
 // Recipe Cost = Σ (Ingredient Quantity × Ingredient Unit Price)
 // recipe_cost_exact is unrounded and is what pricing is computed from.
 // When any ingredient has no price for the chosen source, recipe_cost is null:
@@ -189,7 +189,7 @@ const computeRecipeCost = async (recipeId, priceSource, db) => {
   };
 };
 
-// ── computeImpactAnalysis ─────────────────────────────────────────────────────
+// computeImpactAnalysis
 
 // recipe_cost / portion_cost / recommended_price from a plain { ingredient_id: price } map.
 // Every tier is null when any ingredient has no price in the map.

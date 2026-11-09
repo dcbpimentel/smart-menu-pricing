@@ -34,8 +34,8 @@ const SOURCE_OPTIONS = [
   { value: 'manual', label: 'Manual entries only',  description: 'Only use prices you entered by hand' },
 ];
 
-const fmt = (n, d = 2) => n == null ? '—' : `₱${Number(n).toFixed(d)}`;
-const fmtPct = (n, d = 1) => n == null ? '—' : `${Number(n).toFixed(d)}%`;
+const fmt = (n, d = 2) => n == null ? '-' : `₱${Number(n).toFixed(d)}`;
+const fmtPct = (n, d = 1) => n == null ? '-' : `${Number(n).toFixed(d)}%`;
 
 function StatusBadge({ needsUpdate, noData, noActualPrice }) {
   if (noData) return (
@@ -316,13 +316,13 @@ export default function Reports() {
       {/* Threshold legend */}
       <div className="no-print" style={{ background: '#FDFBF8', border: T.cardBorder, borderRadius: 12, padding: '10px 16px', marginBottom: 16, fontSize: 12, color: T.textMuted, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
         <span>
-          <strong style={{ color: T.ok }}>Price OK</strong> — actual price within {priceGapThreshold}% of recommended AND food cost within {foodCostDeviationThreshold}pp of target
+          <strong style={{ color: T.ok }}>Price OK</strong>: actual price within {priceGapThreshold}% of recommended AND food cost within {foodCostDeviationThreshold}pp of target
         </span>
         <span>
-          <strong style={{ color: T.warn }}>Update price</strong> — either threshold exceeded (configure in Settings &rsaquo; Preferences)
+          <strong style={{ color: T.warn }}>Update price</strong>: either threshold exceeded (configure in Settings &rsaquo; Preferences)
         </span>
         <span>
-          <strong style={{ color: T.textSecond }}>No actual price</strong> — set the actual selling price on the Costing page to enable comparison
+          <strong style={{ color: T.textSecond }}>No actual price</strong>: set the actual selling price on the Costing page to enable comparison
         </span>
       </div>
 
@@ -408,7 +408,7 @@ export default function Reports() {
                             <span style={{ fontSize: 11.5, color: T.danger, marginLeft: 6 }}>Error</span>
                           )}
                         </td>
-                        <td style={{ ...tdStyle, textAlign: 'center', color: T.textMuted }}>{row.servings ?? '—'}</td>
+                        <td style={{ ...tdStyle, textAlign: 'center', color: T.textMuted }}>{row.servings ?? '-'}</td>
                         <td style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(row.portion_cost)}</td>
                         <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(row.recommended_price)}</td>
                         <td style={{ ...tdStyle, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: T.textMuted }}>{fmt(ap)}</td>
@@ -427,7 +427,7 @@ export default function Reports() {
                           color: gapFlag ? T.warn : gapPct != null ? T.textSecond : T.textMuted,
                           fontWeight: gapFlag ? 700 : 400,
                         }}>
-                          {gapPct != null ? `${gapPct.toFixed(1)}%` : '—'}
+                          {gapPct != null ? `${gapPct.toFixed(1)}%` : '-'}
                         </td>
                         <td style={{ ...tdStyle, textAlign: 'center' }}>
                           <StatusBadge needsUpdate={needsUpdate} noData={noData} noActualPrice={noActualPrice} />

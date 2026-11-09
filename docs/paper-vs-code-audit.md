@@ -121,42 +121,42 @@ Still open: **H4** (use 0% waste in the 20 test recipes), **H6** (outdated-price
 
 | Paper Claim / Section | System Status | Exact File / Function / Line | Risk Level & Explanation |
 | :--- | :--- | :--- | :--- |
-| Recipe Cost = Σ(Qty × Unit Price) — §3.3 L5, §3.8.4 | **Divergence** (adds waste factor and unit conversion) | `costingService.js` `computeRecipeCost` L70–81 | **High.** See H4. Unit conversion is defensible (§2.6, §3.4.2); waste is not documented. |
-| Portion Cost = Recipe Cost ÷ Servings — §3.3 L5 | **Exact Match** (but rounded to 2 dp) | `costingService.js` `computePortionCost` L122–132 | **Med.** Formula matches; intermediate rounding conflicts with §3.3 L6 (H3). |
-| Recommended Price = Portion ÷ (Target% ÷ 100) — §3.3 L6, §3.8.4 | **Exact Match** (formula) | `costingService.js` `computeRecommendedPrice` L135–157 | **Med.** Uses the rounded portion cost as input (H3). |
-| Rounding: none / nearest ₱5 / nearest ₱10, final value only — §3.3 L6 | **Divergence** | `costingService.js` L153, L155, L182–183 | **High.** Ceiling instead of nearest, plus a floating-point bug (H2). |
-| Contribution Margin = Selling Price − Portion Cost — Terms, §3.3 L7 | **Divergence** | `Impact.jsx` L369–374; `costingService.js` `computeContributionMargin` L176 (never called) | **Med.** The Impact "Margin Impact" card is Δrecommended − Δportion. It uses the recommended price as the selling price and ignores the saved menu price (`actual_selling_price`). The service helper is dead code. |
-| Food Cost % = Portion ÷ Selling Price — Terms | **Exact Match** (display) | `Costing.jsx` stat tiles; `Dashboard.jsx` L424 | **Low.** |
-| Unit normalization (kg, g, L, ml → base unit) — §2.6, §3.3 L3, §3.4.2 | **Divergence** (only at costing time, not at extraction) | `utils/units.js`; `extraction.js` `/save` L162–175 | **High.** See H1. |
-| HTML parsing with cheerio — §3.3 L2, Table 3.1 | **Exact Match** | `extractor.js` `parseHTMLString` L74–109 | **Low.** Note the unstated defaults: price column = 2 and unit column = 1 when headers aren't found (L67–68), and a missing unit silently becomes `'kg'` (L100). |
-| Text PDF parsing with pdf-parse — §3.3 L2 | **Divergence** (regex per line, no column detection) | `extractor.js` `extractFromPDF` L217–228, `parsePriceLine` L187–204 | **High.** See H8. |
-| OCR with Tesseract.js for images and scanned docs — §1.5, §3.3, §3.8.6 | **Incomplete** (images only) | `extractor.js` `extractFromImage` L235–250 | **High.** See H7. |
-| "Identifies columns with headers such as commodity, price, and SRP" — §3.4.2 | **Exact Match for HTML / Missing for PDF and OCR** | `extractor.js` `detectColumns` L59–70 | **Med.** |
-| Extracted fields: name, unit, price, source, date — §3.3 L2, §3.5.1 | **Incomplete** (unit not saved) | `schema.sql` `ingredient_prices` L34–56 (no unit column) | **Med.** The unit appears in the review table but is never stored, so the "unit" field in §3.5.1 can only be checked on the review screen. |
-| Source label assigned by the user — §3.4.2 | **Exact Match** | `extraction.js` L37, L46, L78 | **Low.** The `manual` value is also accepted for extraction, which the paper doesn't mention. |
-| Date not detected → assumed as extraction date, flagged — §3.3 L3 | **Exact Match** | `extractor.js` L52–55, L221–223; flag `date_assumed` | **Low.** Takes the **first** date anywhere in the document (L35–47), which could be a footer or "posted on" date. |
-| Levenshtein matching — §3.3 L3, §3.8.7 | **Exact Match** (algorithm); thresholds not stated in the paper | `matcher.js` L12–35 | **Med.** Distance ≤3 = matched, 4–6 = needs review, >6 = no match. These are absolute character counts, so short names are fragile (e.g. "beef" vs "beer" = 1). |
-| Classification: ready / needs review / rejected — §3.3 L3 | **Divergence** (labels) | `Extraction.jsx` L34–43 ("Matched", "Partial", "No match", "Needs review") | **Low.** Map the terms in the defense. |
-| Review/rejected entries need user confirmation to save — §3.3 L3 | **Divergence** (can never be saved) | `extraction.js` L147–148; `Extraction.jsx` L748 | **Med.** See H11. |
-| Validation: missing units, unusual values — §2.6, §3.3 L3 | **Partial** | `normalizer.js` L29–39 | **Med.** Flags a missing unit, price 0, or price above ₱5,000 (unstated threshold). No check for unusually *low* prices. |
-| Duplicate / repeated entries flagged — §2.6, §3.8.7 | **Missing in Code** | `extraction.js` `/save` | **Med.** Saving the same bulletin twice inserts duplicate price rows. |
-| Provenance (source + date, traceable origin) — §2.1, §2.6, §3.3 L2 | **Partial** | `extraction.js` L171 (`provenance_note = 'auto-matched from "…"'`) | **Med.** The source URL and file name are not stored, so a price can't be traced back to a specific bulletin. |
-| Manual price with its source (market purchase / supplier quotation) and date — §3.4.2, §3.4.3 | **Partial** | `Ingredients.jsx` L205–211 (sends `source: 'manual'` with no `provenance_note`) | **Med.** No field to record market purchase vs. supplier quotation. |
-| User selects the applied price (official vs. manual) — §2.1 | **Exact Match** | `costingService.js` L45–58; `Costing.jsx` Price Source select | **Low.** |
-| Outdated prices: DA 7 d / DTI 180 d / manual 30 d, labeled in the price list and costing results — §3.4.2 | **Missing in Code** (one 7-day Dashboard warning) | `Dashboard.jsx` L120, L229 | **High.** See H6. |
-| Unavailable prices flagged; user enters manual — §3.4.2 | **Partial** | `costingController.js` L18–25 | **High.** Flagged in the response, but a partial cost is still computed and saved (H5). |
-| Centralized MySQL storage of ingredients, price history, recipes, servings, settings, costing outputs — §2.7, §3.3 L4, §3.8.8 | **Exact Match** | `database/schema.sql` | **Low.** |
-| Costing snapshots traceable over time — §2.7, §3.8.8 | **Partial** | `costingController.js` L53 (`applied_price_source = "<source>:<compute date>"`) | **Med.** The snapshot records the compute date, not the date or ID of each price used. Per-ingredient breakdowns are not saved. |
-| Recommendation not enforced; owner decides — §2.3, §3.3 L6, §3.8.3 | **Exact Match** | `costing_outputs.actual_selling_price`; `PATCH /costing/:id/actual-price` | **Low.** |
-| Impact analysis: updated recipe cost, portion cost, recommended price, CM differences — §3.3 L7 | **Partial** | `computeImpactAnalysis` L228–290; `Impact.jsx` | **Med.** Per-recipe only (H10); CM definition differs (see the CM row above). |
-| Impact: identify most-affected menu items — §1.2 #5, §3.3 L7, §3.8.9 | **Missing in Code** | — | **High.** See H10. |
-| Admin tools for ingredients, recipes, pricing settings — §3.2.1 #6, §3.3 final layer | **Exact Match** | `routes/ingredients.js`, `routes/recipes.js`, `routes/settings.js` | **Low.** |
-| "Authorized users / authorized staff" — §3.3 L1, final layer | **Exact Match** | `middleware/auth.js`, `middleware/requireAdmin.js`, `routes/auth.js`, `routes/users.js` | **Low.** The project's `CLAUDE.md` still says "No authentication", but the paper is consistent with the code. |
-| Stack: Node + Express, React + Vite, Tailwind CSS v4, MySQL — §1.5, §3.2.2, Table 3.1 | **Divergence** (Tailwind barely used) | `frontend/src/index.css` L1 (`@import "tailwindcss"`); ~1,289 inline `style={{}}` blocks vs. 3 Tailwind utility classes | **Low–Med.** A reviewer reading the frontend will see that Tailwind isn't really the styling method. |
-| cheerio / pdf-parse / Tesseract.js — Table 3.1 | **Exact Match** | `backend/package.json` (pdf-parse **1.1.4**, not ^2 as `CLAUDE.md` says) | **Low.** |
-| Researchers remove each restaurant's data after a session — §3.4.6 step 5, §3.7.5 | **Partial** | `routes/reset.js` L16–24 | **Med.** Reset clears recipes, prices and costing, but **not** `ingredient_stock` or `inventory_transactions`. It also reloads demo prices labeled "Divisoria vegetable stall" etc. (L39–45) as `manual` prices. The `TRUNCATE` calls inside the transaction commit immediately, so a failed reset can leave partial deletions. |
-| Database stored locally on the researchers' laptop — §3.7.5 | **Requires Manual Inspection** | `frontend/vercel.json`; `.env.example` (`DB_HOST=localhost`) | **Med.** A Vercel deployment config exists. If any evaluation uses a hosted backend or database, that contradicts §3.7.5. |
-| Time-efficiency task: update a price, then see the updated recipe and portion cost — §3.5.3 | **Exact Match** (workflow possible) | `Ingredients.jsx` (add price) → `Costing.jsx` (Compute) | **Low.** Takes two pages and a manual Compute click, so it adds to the timed duration. |
+| Recipe Cost = Σ(Qty × Unit Price) (§3.3 L5, §3.8.4) | **Divergence** (adds waste factor and unit conversion) | `costingService.js` `computeRecipeCost` L70–81 | **High.** See H4. Unit conversion is defensible (§2.6, §3.4.2); waste is not documented. |
+| Portion Cost = Recipe Cost ÷ Servings (§3.3 L5) | **Exact Match** (but rounded to 2 dp) | `costingService.js` `computePortionCost` L122–132 | **Med.** Formula matches; intermediate rounding conflicts with §3.3 L6 (H3). |
+| Recommended Price = Portion ÷ (Target% ÷ 100) (§3.3 L6, §3.8.4) | **Exact Match** (formula) | `costingService.js` `computeRecommendedPrice` L135–157 | **Med.** Uses the rounded portion cost as input (H3). |
+| Rounding: none / nearest ₱5 / nearest ₱10, final value only (§3.3 L6) | **Divergence** | `costingService.js` L153, L155, L182–183 | **High.** Ceiling instead of nearest, plus a floating-point bug (H2). |
+| Contribution Margin = Selling Price − Portion Cost (Terms, §3.3 L7) | **Divergence** | `Impact.jsx` L369–374; `costingService.js` `computeContributionMargin` L176 (never called) | **Med.** The Impact "Margin Impact" card is Δrecommended − Δportion. It uses the recommended price as the selling price and ignores the saved menu price (`actual_selling_price`). The service helper is dead code. |
+| Food Cost % = Portion ÷ Selling Price (Terms) | **Exact Match** (display) | `Costing.jsx` stat tiles; `Dashboard.jsx` L424 | **Low.** |
+| Unit normalization (kg, g, L, ml → base unit) (§2.6, §3.3 L3, §3.4.2) | **Divergence** (only at costing time, not at extraction) | `utils/units.js`; `extraction.js` `/save` L162–175 | **High.** See H1. |
+| HTML parsing with cheerio (§3.3 L2, Table 3.1) | **Exact Match** | `extractor.js` `parseHTMLString` L74–109 | **Low.** Note the unstated defaults: price column = 2 and unit column = 1 when headers aren't found (L67–68), and a missing unit silently becomes `'kg'` (L100). |
+| Text PDF parsing with pdf-parse (§3.3 L2) | **Divergence** (regex per line, no column detection) | `extractor.js` `extractFromPDF` L217–228, `parsePriceLine` L187–204 | **High.** See H8. |
+| OCR with Tesseract.js for images and scanned docs (§1.5, §3.3, §3.8.6) | **Incomplete** (images only) | `extractor.js` `extractFromImage` L235–250 | **High.** See H7. |
+| "Identifies columns with headers such as commodity, price, and SRP" (§3.4.2) | **Exact Match for HTML / Missing for PDF and OCR** | `extractor.js` `detectColumns` L59–70 | **Med.** |
+| Extracted fields: name, unit, price, source, date (§3.3 L2, §3.5.1) | **Incomplete** (unit not saved) | `schema.sql` `ingredient_prices` L34–56 (no unit column) | **Med.** The unit appears in the review table but is never stored, so the "unit" field in §3.5.1 can only be checked on the review screen. |
+| Source label assigned by the user (§3.4.2) | **Exact Match** | `extraction.js` L37, L46, L78 | **Low.** The `manual` value is also accepted for extraction, which the paper doesn't mention. |
+| Date not detected → assumed as extraction date, flagged (§3.3 L3) | **Exact Match** | `extractor.js` L52–55, L221–223; flag `date_assumed` | **Low.** Takes the **first** date anywhere in the document (L35–47), which could be a footer or "posted on" date. |
+| Levenshtein matching (§3.3 L3, §3.8.7) | **Exact Match** (algorithm); thresholds not stated in the paper | `matcher.js` L12–35 | **Med.** Distance ≤3 = matched, 4–6 = needs review, >6 = no match. These are absolute character counts, so short names are fragile (e.g. "beef" vs "beer" = 1). |
+| Classification: ready / needs review / rejected (§3.3 L3) | **Divergence** (labels) | `Extraction.jsx` L34–43 ("Matched", "Partial", "No match", "Needs review") | **Low.** Map the terms in the defense. |
+| Review/rejected entries need user confirmation to save (§3.3 L3) | **Divergence** (can never be saved) | `extraction.js` L147–148; `Extraction.jsx` L748 | **Med.** See H11. |
+| Validation: missing units, unusual values (§2.6, §3.3 L3) | **Partial** | `normalizer.js` L29–39 | **Med.** Flags a missing unit, price 0, or price above ₱5,000 (unstated threshold). No check for unusually *low* prices. |
+| Duplicate / repeated entries flagged (§2.6, §3.8.7) | **Missing in Code** | `extraction.js` `/save` | **Med.** Saving the same bulletin twice inserts duplicate price rows. |
+| Provenance (source + date, traceable origin) (§2.1, §2.6, §3.3 L2) | **Partial** | `extraction.js` L171 (`provenance_note = 'auto-matched from "…"'`) | **Med.** The source URL and file name are not stored, so a price can't be traced back to a specific bulletin. |
+| Manual price with its source (market purchase / supplier quotation) and date (§3.4.2, §3.4.3) | **Partial** | `Ingredients.jsx` L205–211 (sends `source: 'manual'` with no `provenance_note`) | **Med.** No field to record market purchase vs. supplier quotation. |
+| User selects the applied price (official vs. manual) (§2.1) | **Exact Match** | `costingService.js` L45–58; `Costing.jsx` Price Source select | **Low.** |
+| Outdated prices: DA 7 d / DTI 180 d / manual 30 d, labeled in the price list and costing results (§3.4.2) | **Missing in Code** (one 7-day Dashboard warning) | `Dashboard.jsx` L120, L229 | **High.** See H6. |
+| Unavailable prices flagged; user enters manual (§3.4.2) | **Partial** | `costingController.js` L18–25 | **High.** Flagged in the response, but a partial cost is still computed and saved (H5). |
+| Centralized MySQL storage of ingredients, price history, recipes, servings, settings, costing outputs (§2.7, §3.3 L4, §3.8.8) | **Exact Match** | `database/schema.sql` | **Low.** |
+| Costing snapshots traceable over time (§2.7, §3.8.8) | **Partial** | `costingController.js` L53 (`applied_price_source = "<source>:<compute date>"`) | **Med.** The snapshot records the compute date, not the date or ID of each price used. Per-ingredient breakdowns are not saved. |
+| Recommendation not enforced; owner decides (§2.3, §3.3 L6, §3.8.3) | **Exact Match** | `costing_outputs.actual_selling_price`; `PATCH /costing/:id/actual-price` | **Low.** |
+| Impact analysis: updated recipe cost, portion cost, recommended price, CM differences (§3.3 L7) | **Partial** | `computeImpactAnalysis` L228–290; `Impact.jsx` | **Med.** Per-recipe only (H10); CM definition differs (see the CM row above). |
+| Impact: identify most-affected menu items (§1.2 #5, §3.3 L7, §3.8.9) | **Missing in Code** | - | **High.** See H10. |
+| Admin tools for ingredients, recipes, pricing settings (§3.2.1 #6, §3.3 final layer) | **Exact Match** | `routes/ingredients.js`, `routes/recipes.js`, `routes/settings.js` | **Low.** |
+| "Authorized users / authorized staff" (§3.3 L1, final layer) | **Exact Match** | `middleware/auth.js`, `middleware/requireAdmin.js`, `routes/auth.js`, `routes/users.js` | **Low.** The project's `CLAUDE.md` still says "No authentication", but the paper is consistent with the code. |
+| Stack: Node + Express, React + Vite, Tailwind CSS v4, MySQL (§1.5, §3.2.2, Table 3.1) | **Divergence** (Tailwind barely used) | `frontend/src/index.css` L1 (`@import "tailwindcss"`); ~1,289 inline `style={{}}` blocks vs. 3 Tailwind utility classes | **Low–Med.** A reviewer reading the frontend will see that Tailwind isn't really the styling method. |
+| cheerio / pdf-parse / Tesseract.js (Table 3.1) | **Exact Match** | `backend/package.json` (pdf-parse **1.1.4**, not ^2 as `CLAUDE.md` says) | **Low.** |
+| Researchers remove each restaurant's data after a session (§3.4.6 step 5, §3.7.5) | **Partial** | `routes/reset.js` L16–24 | **Med.** Reset clears recipes, prices and costing, but **not** `ingredient_stock` or `inventory_transactions`. It also reloads demo prices labeled "Divisoria vegetable stall" etc. (L39–45) as `manual` prices. The `TRUNCATE` calls inside the transaction commit immediately, so a failed reset can leave partial deletions. |
+| Database stored locally on the researchers' laptop (§3.7.5) | **Requires Manual Inspection** | `frontend/vercel.json`; `.env.example` (`DB_HOST=localhost`) | **Med.** A Vercel deployment config exists. If any evaluation uses a hosted backend or database, that contradicts §3.7.5. |
+| Time-efficiency task: update a price, then see the updated recipe and portion cost (§3.5.3) | **Exact Match** (workflow possible) | `Ingredients.jsx` (add price) → `Costing.jsx` (Compute) | **Low.** Takes two pages and a manual Compute click, so it adds to the timed duration. |
 | Unit conversion of prices when ingredient units are edited | **Extra hazard in code** | `ingredientController.js` L52–55 | **Med.** An ingredient's base unit can be changed after prices exist, which silently reinterprets every stored price (₱/kg becomes ₱/g). |
 | Inventory module (stock, restock, use-recipe) | **Extra in Code** | `routes/inventory.js`, `controllers/inventoryController.js`, tables `ingredient_stock`, `inventory_transactions` | **Med.** Not in the scope (§1.5) or objectives. §1.5 says the system "does not fully replace … POS operations". Be ready to explain it as an add-on outside the evaluation. |
 | Batch "Compute All", Reports page, CSV export, data reset, user management, recipe photos | **Extra in Code** | `costingController.js` `computeBatch`, `getSummary`; `routes/export.js`; `routes/reset.js`; `routes/users.js`; `recipes.image_data` | **Low.** Supporting features; none contradicts the paper. |
@@ -240,47 +240,47 @@ None of these values appear in the paper. A reviewer can fairly ask for the ones
 
 Each item gives a justification you can use now, then a code patch that makes the system follow the paper exactly. Patches are small unless noted.
 
-**H1 — Extracted prices not unit-converted**
+**H1: Extracted prices not unit-converted**
 - *Justification:* "Conversion is applied at costing time: recipe quantities are converted into each ingredient's price unit (`utils/units.js`), which is mathematically equivalent to converting the price into the recipe unit (§3.4.2). For the evaluation, ingredients are encoded in the same unit as the bulletin (kg for DA, per SKU for DTI)."
 - *Patch:* In `/save`, look up `ingredients.unit`, compute `getConversionFactor(ingredient.unit, entry.normalized_unit)`, and save `price × factor`. Flag rows where the units can't convert. Add a `unit` column to `ingredient_prices` so the source unit is kept.
 
-**H2 — Ceiling rounding and floating-point bug**
+**H2: Ceiling rounding and floating-point bug**
 - *Justification:* "Rounding up is a deliberate pricing safeguard so a menu price never falls below the target food cost." This doesn't cover the floating-point bug, so fix it regardless.
 - *Patch:* `Math.round(raw / 5) * 5` (and the ₱10 version) in both `computeRecommendedPrice` and `_applyRoundingRule`. If you keep rounding up, use `Math.ceil(Number((raw / 5).toFixed(9))) * 5` to remove the floating-point error. Change both functions so they can't drift apart.
 
-**H3 — Intermediate rounding**
+**H3: Intermediate rounding**
 - *Justification:* "Stored values are rounded to centavos for display and storage. The ±₱0.01 tolerance in §3.5.2 covers this."
 - *Patch:* Compute with full precision through ingredient cost, recipe cost and portion cost. Round only for display, for the stored `DECIMAL(10,2)` values, and at the final rounding rule. Base `computeRecommendedPrice` on the unrounded portion cost.
 
-**H4 — Waste formula not in the paper**
+**H4: Waste formula not in the paper**
 - *Justification:* "Waste % is optional and defaults to 0%, where the formula reduces exactly to §3.3 layer 5. It applies the standard yield-based method in the cited source [3] (Egan, Ch. 7: yield %, EP cost = AP cost ÷ yield %). The 20 correctness cases in §3.5.2 use 0% waste."
 - *Patch (for strict replication):* Add a feature flag (e.g. `WASTE_ENABLED=false`) that treats `waste_pct` as 0 during evaluation, or set waste to 0 in the 20 test recipes. *Camera-ready:* add the Effective Quantity formula to §3.3 and §3.8.4 (text drafted earlier in this session).
 
-**H5 — Partial costs saved**
+**H5: Partial costs saved**
 - *Justification:* "The system shows a partial-costing warning listing the ingredients with no price, so the owner can add manual prices before relying on the result."
 - *Patch:* In `computeCosting` and `computeBatch`, don't insert into `costing_outputs` (and return no recommended price) when `missing_price_ingredients.length > 0`. Alternatively, add an `is_partial` column and show it in history.
 
-**H6 — Outdated-price rules**
+**H6: Outdated-price rules**
 - *Justification:* "The Dashboard flags prices older than a configurable number of days, and every price shows its source and date in the price list."
 - *Patch (moderate):* Add a shared helper `isOutdated(source, date)` that returns true when the price is older than `{da: 7, dti: 180, manual: 30}[source]` days. Return `is_outdated` from `/prices/latest`, `/prices/history` and each `ingredient_breakdown` row. Show an "Outdated" badge in `Ingredients.jsx` and the `Costing.jsx` breakdown, and use the same helper on the Dashboard instead of the single threshold.
 
-**H7 — No OCR fallback for scanned PDFs**
+**H7: No OCR fallback for scanned PDFs**
 - *Justification:* "Scanned bulletins can be uploaded as images (PNG/JPG), which go through OCR. Official DA and DTI PDFs are text-based."
 - *Patch (moderate):* In `extractFromPDF`, if `parsed.text.trim().length < 50` or no rows come out, render the pages to PNG and send them through `extractFromImage`. pdf-parse 1.1.4 can't render pages, so this needs an added library.
 
-**H8 — PDF/OCR line parser**
+**H8: PDF/OCR line parser**
 - *Justification:* "The parser is rule-based as described in §1.5 and was tuned on the bulletin layouts used in the study. Rows it can't parse are flagged or left out rather than saved wrongly. Every saved entry passes through human review."
 - *Patch (moderate):* Strip thousands separators before matching numbers. Treat units glued to numbers (`155g`, `370ml`) as part of the item description. Take the **last** price-like number on the line as the price. Accept a header-level unit ("Price/kg") when a row has none. Add DTI unit words (can, bottle, sachet, pouch, tray, dozen). Test against the real §3.5.1 PDFs.
 
-**H9 — Variant collapse**
+**H9: Variant collapse**
 - *Justification:* "Variants are deliberately routed to review so the owner chooses which cut matches their ingredient." This only holds if they actually end up flagged.
 - *Patch:* Keep bracketed qualifiers in `normalized_name` (drop only punctuation). Or match against both forms, and flag a row whenever two or more extracted rows match the same ingredient.
 
-**H10 — No cross-recipe impact**
+**H10: No cross-recipe impact**
 - *Justification:* "Impact analysis is run per menu item. The Reports page summarizes all recipes after a price update, which shows which items need repricing."
 - *Patch (moderate):* Add an endpoint `POST /api/costing/impact-by-ingredient` that takes `{ ingredient_id, new_price, pricing_setting_id }`, runs `computeImpactAnalysis` for every recipe using that ingredient, and returns the results sorted by portion-cost change. Add a "Which dishes are affected?" view on the Impact page.
 
-**H11 — Flagged rows can't be confirmed**
+**H11: Flagged rows can't be confirmed**
 - *Justification:* "Rows needing review are never saved automatically. The owner records the confirmed value as a manual price with its source, which keeps provenance clear."
 - *Patch:* Add a per-row "Confirm" control on the Extraction page (with an ingredient picker for partial or no matches) that sets `matched = true`, `flagged = false` and `confirmed_by_user = true`, and record that confirmation in `provenance_note`.
 
@@ -292,12 +292,12 @@ Each item gives a justification you can use now, then a code patch that makes th
 | Extracted unit not stored | "The unit is checked during review before saving." | Add a `unit` column to `ingredient_prices`. |
 | Source URL / file name not stored | "Source and date are stored for every price." | Save `url` or `originalname` in `provenance_note`. |
 | Manual sub-source (market vs. supplier) | "Owners record this in the note field." | Add a select (Market purchase / Supplier quotation) that writes to `provenance_note`. |
-| No duplicate detection | — | Before inserting, skip a row if the same `(ingredient_id, source, extraction_date, price)` already exists. |
+| No duplicate detection | - | Before inserting, skip a row if the same `(ingredient_id, source, extraction_date, price)` already exists. |
 | Snapshot traceability | "Each snapshot records the price source and date of computation." | Store the per-ingredient breakdown as JSON, or the price IDs used, in `costing_outputs`. |
 | Tailwind barely used | "Tailwind v4 is the styling base (imported globally). Components use design tokens via inline styles for theme control." | No code change needed; reword in the camera-ready version. |
 | Inventory module out of scope | "An exploratory add-on outside the evaluation scope (§1.5). It isn't used in any evaluation task." | Optionally hide it behind a feature flag during sessions. |
-| Reset leaves inventory data; demo seed prices | — | Add `TRUNCATE ingredient_stock` and `inventory_transactions` to `reset.js`. Remove the transaction wrapper or switch to `DELETE`. Seed with no prices, or label them clearly as demo data. |
-| Ingredient unit editable after prices exist | — | Block unit changes when prices exist (409), or convert stored prices. |
+| Reset leaves inventory data; demo seed prices | - | Add `TRUNCATE ingredient_stock` and `inventory_transactions` to `reset.js`. Remove the transaction wrapper or switch to `DELETE`. Seed with no prices, or label them clearly as demo data. |
+| Ingredient unit editable after prices exist | - | Block unit changes when prices exist (409), or convert stored prices. |
 | Classification labels | "Matched = ready, Partial / Needs review = needs review, No match = rejected." | Rename the UI labels to match §3.3. |
 | Fixed match thresholds | "Chosen during iterative testing (§3.2.4)." | Optionally use a length-normalized similarity, e.g. `1 − d / max(len)`. Report the thresholds in Chapter 4. |
 

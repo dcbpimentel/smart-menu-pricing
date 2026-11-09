@@ -36,7 +36,7 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 102
 
 const VALID_SOURCES = ['dti', 'da', 'manual'];
 
-// ── POST /api/extraction/html  (URL-based) ────────────────────────────────────
+// POST /api/extraction/html  (URL-based)
 router.post('/html', async (req, res) => {
   const { url, source } = req.body;
 
@@ -56,7 +56,7 @@ router.post('/html', async (req, res) => {
   res.json({ success: true, data: processed, message: `Extracted ${processed.length} price entries` });
 });
 
-// ── POST /api/extraction/upload  (file-based) ─────────────────────────────────
+// POST /api/extraction/upload  (file-based)
 router.post('/upload', (req, res, next) => {
   // Run multer first so we can return clean 400s for file errors
   upload.single('file')(req, res, (err) => {
@@ -136,7 +136,7 @@ router.post('/upload', (req, res, next) => {
   }
 });
 
-// ── POST /api/extraction/save ─────────────────────────────────────────────────
+// POST /api/extraction/save
 router.post('/save', async (req, res) => {
   const { entries } = req.body;
 

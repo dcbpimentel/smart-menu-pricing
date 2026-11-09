@@ -10,7 +10,7 @@ import {
   Legend, ResponsiveContainer,
 } from 'recharts';
 
-/* ─── Design tokens ────────────────────────────────────────────────────────── */
+/* Design tokens */
 const T = {
   canvasBg:    '#FBF8F3',
   cardBg:      '#FFFFFF',
@@ -127,7 +127,7 @@ function riseInStyle(delay = 0) {
   };
 }
 
-/* ─── Subcomponents ──────────────────────────────────────────────────────── */
+/* Subcomponents */
 
 function ArrowRight({ color = '#C5BCAF' }) {
   return (
@@ -138,7 +138,7 @@ function ArrowRight({ color = '#C5BCAF' }) {
 }
 
 function DiffPill({ amount, pct }) {
-  if (amount == null) return <span style={{ color: T.textMuted, fontSize: 12 }}>—</span>;
+  if (amount == null) return <span style={{ color: T.textMuted, fontSize: 12 }}>-</span>;
   const up   = amount > 0;
   const zero = amount === 0;
   const color = zero ? T.textMuted : up ? 'oklch(0.58 0.16 28)' : T.accent;
@@ -224,7 +224,7 @@ function NewPriceInput({ value, onChange }) {
   );
 }
 
-/* ─── Ingredient cost chart ─────────────────────────────────────────────── */
+/* Ingredient cost chart */
 function IngredientCostChart({ impacts }) {
   if (!impacts?.length) return null;
 
@@ -270,7 +270,7 @@ function IngredientCostChart({ impacts }) {
   );
 }
 
-/* ─── Price bars ────────────────────────────────────────────────────────── */
+/* Price bars */
 function PriceBars({ oldPrice, newPrice }) {
   const max = Math.max(oldPrice || 0, newPrice || 0, 1);
   const oldW = `${Math.round((oldPrice / max) * 100)}%`;
@@ -338,7 +338,7 @@ function PriceBars({ oldPrice, newPrice }) {
   );
 }
 
-/* ─── 2×2 diff stat cards ──────────────────────────────────────────────── */
+/* 2×2 diff stat cards */
 function DiffStatCards({ result }) {
   const cards = [
     {
@@ -408,7 +408,7 @@ function DiffStatCards({ result }) {
             }}>
               {c.diff != null
                 ? `${c.diff >= 0 ? '+' : ''}${formatCurrency(c.diff)}`
-                : c.new != null ? formatCurrency(c.new) : '—'
+                : c.new != null ? formatCurrency(c.new) : '-'
               }
             </div>
             {c.pct != null && c.diff !== 0 && (
@@ -431,7 +431,7 @@ function DiffStatCards({ result }) {
   );
 }
 
-/* ─── Ingredient impact table ─────────────────────────────────────────── */
+/* Ingredient impact table */
 function IngredientImpactTable({ impacts }) {
   return (
     <div style={{ ...styles.card }}>
@@ -527,7 +527,7 @@ function IngredientImpactTable({ impacts }) {
                         {up ? '+' : ''}{formatCurrency(costChange)}
                       </span>
                     ) : (
-                      <span style={{ color: T.textMuted, fontSize: 13 }}>—</span>
+                      <span style={{ color: T.textMuted, fontSize: 13 }}>-</span>
                     )}
                   </td>
                   <td style={{ ...styles.tdLast, textAlign: 'right' }}>
@@ -568,7 +568,7 @@ function IngredientImpactTable({ impacts }) {
   );
 }
 
-/* ─── Main page ──────────────────────────────────────────────────────────── */
+/* Main page */
 export default function Impact() {
   const toast = useToast();
 
@@ -588,7 +588,7 @@ export default function Impact() {
   const [analyzeError, setAnalyzeError] = useState('');
   const [result, setResult]           = useState(null);
 
-  /* ── Bootstrap ── */
+  /* Bootstrap */
   const fetchMeta = useCallback(async () => {
     setLoadingMeta(true);
     try {
@@ -611,7 +611,7 @@ export default function Impact() {
 
   useEffect(() => { fetchMeta(); }, [fetchMeta]);
 
-  /* ── Load ingredients + pre-fill latest prices ── */
+  /* Load ingredients + pre-fill latest prices */
   const fetchRecipeIngredients = useCallback(async (rId) => {
     if (!rId) return;
     setLoadingIngredients(true);
@@ -658,7 +658,7 @@ export default function Impact() {
     }));
   };
 
-  /* ── Submit ── */
+  /* Submit */
   const handleAnalyze = async (e) => {
     e.preventDefault();
     setAnalyzing(true);
@@ -701,7 +701,7 @@ export default function Impact() {
     }
   };
 
-  /* ── Render ── */
+  /* Render */
   if (loadingMeta) return (
     <div style={{ ...styles.card, padding: 24 }}>
       <SkeletonStats count={4} />
@@ -710,7 +710,7 @@ export default function Impact() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {/* ── keyframes injected once ── */}
+      {/* keyframes injected once */}
       <style>{`
         @keyframes riseIn {
           from { opacity:0; transform:translateY(14px); }
@@ -724,7 +724,7 @@ export default function Impact() {
         .impact-run-btn:active { transform: translateY(0); }
       `}</style>
 
-      {/* ── Input card ── */}
+      {/* Input card */}
       <div style={styles.card}>
         {/* Intro kicker */}
         <div style={{ padding: '14px 22px 0', fontSize: 13, color: T.textMuted }}>
@@ -904,7 +904,7 @@ export default function Impact() {
         )}
       </div>
 
-      {/* ── Results ── */}
+      {/* Results */}
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, ...riseInStyle(0) }}>
           {/* Row 1: full-width ingredient cost chart */}

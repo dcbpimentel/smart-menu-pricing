@@ -12,7 +12,7 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
-    // Don't auto-logout on a failed login attempt — only on expired/invalid token
+    // Log out on an expired or invalid token, but not on a failed login attempt
     if (error.response?.status === 401 && !error.config.url.includes('/auth/login')) {
       logout();
     }

@@ -1,4 +1,4 @@
-# Smart Menu Pricing — CLAUDE.md
+# Smart Menu Pricing: CLAUDE.md
 
 Persistent context for all Claude Code sessions on this project.
 
@@ -6,7 +6,7 @@ Persistent context for all Claude Code sessions on this project.
 
 ## Project Overview
 
-**Smart Menu Pricing System** — capstone project for small restaurants in Kidapawan City, Philippines.
+**Smart Menu Pricing System**: capstone project for small restaurants in Kidapawan City, Philippines.
 Helps restaurant owners calculate accurate dish costs from live market prices (DTI/DA bulletins) and
 recommends selling prices based on target food-cost percentages.
 
@@ -77,7 +77,7 @@ smart-menu-pricing/
 | Package | Version | Purpose |
 |---|---|---|
 | `express` | ^5 | Web framework / routing |
-| `mysql2` | ^3 | MySQL driver — promise pool via `utils/db.js` |
+| `mysql2` | ^3 | MySQL driver, promise pool via `utils/db.js` |
 | `dotenv` | ^17 | Loads `.env` into `process.env` |
 | `cors` | ^2 | Cross-origin headers for frontend dev |
 | `multer` | ^2 | Multipart file uploads (PDF/image ingestion) |
@@ -92,7 +92,7 @@ smart-menu-pricing/
 | Package | Purpose |
 |---|---|
 | `react` + `vite` | UI framework + dev server / bundler |
-| `@tailwindcss/vite` + `tailwindcss` v4 | Utility CSS — no `tailwind.config.js` needed |
+| `@tailwindcss/vite` + `tailwindcss` v4 | Utility CSS, no `tailwind.config.js` needed |
 | `postcss` + `autoprefixer` | CSS processing pipeline |
 | `axios` | HTTP calls to backend API |
 | `react-router-dom` | Client-side routing |
@@ -203,44 +203,44 @@ All responses follow: `{ success: true/false, data: <object|array|null>, message
 |---|---|---|
 | GET | `/health` | Returns `{ status: 'ok' }` |
 
-### Ingredients — `/api/ingredients`
+### Ingredients: `/api/ingredients`
 | Method | Path | Description |
 |---|---|---|
 | GET | `/` | All ingredients ordered by name |
-| GET | `/:id` | Single ingredient — 404 if missing |
-| POST | `/` | Create ingredient (`name`, `unit`, `category` required) — 409 on duplicate name |
-| PUT | `/:id` | Partial update — 404 if missing, 409 on duplicate name |
-| DELETE | `/:id` | Delete — 404 if missing |
+| GET | `/:id` | Single ingredient, 404 if missing |
+| POST | `/` | Create ingredient (`name`, `unit`, `category` required), 409 on duplicate name |
+| PUT | `/:id` | Partial update, 404 if missing, 409 on duplicate name |
+| DELETE | `/:id` | Delete, 404 if missing |
 
-### Prices — `/api/prices`
+### Prices: `/api/prices`
 | Method | Path | Description |
 |---|---|---|
-| POST | `/` | Add price entry (`ingredient_id`, `price`, `source` required) — 404 if ingredient missing |
+| POST | `/` | Add price entry (`ingredient_id`, `price`, `source` required), 404 if ingredient missing |
 | GET | `/history/:ingredientId` | All price entries for an ingredient, newest first |
-| GET | `/latest/:ingredientId` | Most recent single price entry — **404 if none** (not 200+null) |
+| GET | `/latest/:ingredientId` | Most recent single price entry, **404 if none** (not 200+null) |
 
-### Recipes — `/api/recipes`
+### Recipes: `/api/recipes`
 | Method | Path | Description |
 |---|---|---|
 | GET | `/` | All recipes ordered by name |
-| GET | `/:id` | Recipe + full ingredient list via JOIN — 404 if missing |
-| POST | `/` | Create recipe (`name`, `description`, `servings` required) — 409 on duplicate name |
-| PUT | `/:id` | Partial update — 404 if missing, 409 on duplicate name |
-| DELETE | `/:id` | Delete recipe + cascade-delete recipe_ingredients — 404 if missing |
-| POST | `/:id/ingredients` | Add ingredient to recipe (`ingredient_id`, `quantity`, `unit` required) — 404 if recipe/ingredient missing, 409 if already added |
-| PUT | `/:id/ingredients/:riId` | Update quantity/unit for a recipe ingredient — 404 if missing |
-| DELETE | `/:id/ingredients/:riId` | Remove ingredient from recipe — 404 if missing |
+| GET | `/:id` | Recipe + full ingredient list via JOIN, 404 if missing |
+| POST | `/` | Create recipe (`name`, `description`, `servings` required), 409 on duplicate name |
+| PUT | `/:id` | Partial update, 404 if missing, 409 on duplicate name |
+| DELETE | `/:id` | Delete recipe + cascade-delete recipe_ingredients, 404 if missing |
+| POST | `/:id/ingredients` | Add ingredient to recipe (`ingredient_id`, `quantity`, `unit` required), 404 if recipe/ingredient missing, 409 if already added |
+| PUT | `/:id/ingredients/:riId` | Update quantity/unit for a recipe ingredient, 404 if missing |
+| DELETE | `/:id/ingredients/:riId` | Remove ingredient from recipe, 404 if missing |
 
-### Settings — `/api/settings`
+### Settings: `/api/settings`
 | Method | Path | Description |
 |---|---|---|
 | GET | `/` | All pricing profiles |
-| GET | `/:id` | Single profile — 404 if missing |
-| POST | `/` | Create profile (`label`, `target_food_cost_pct`, `rounding_rule` required) — 409 on duplicate label |
-| PUT | `/:id` | Partial update — 404 if missing, 409 on duplicate label |
-| DELETE | `/:id` | Delete profile — 404 if missing |
+| GET | `/:id` | Single profile, 404 if missing |
+| POST | `/` | Create profile (`label`, `target_food_cost_pct`, `rounding_rule` required), 409 on duplicate label |
+| PUT | `/:id` | Partial update, 404 if missing, 409 on duplicate label |
+| DELETE | `/:id` | Delete profile, 404 if missing |
 
-### Costing — `/api/costing`
+### Costing: `/api/costing`
 | Method | Path | Description |
 |---|---|---|
 | POST | `/compute` | Compute cost for a recipe (`recipe_id`, `pricing_setting_id`, `price_source` required). Saves a `costing_outputs` row. Returns full breakdown including `ingredient_breakdown[]` and `missing_price_ingredients[]`. |
@@ -268,7 +268,7 @@ All responses follow: `{ success: true/false, data: <object|array|null>, message
 ```
 Keys in `old_prices` / `new_prices` are ingredient IDs as strings.
 
-### Price Extraction — `/api/extraction`
+### Price Extraction: `/api/extraction`
 | Method | Path | Description |
 |---|---|---|
 | POST | `/html` | Scrape a URL (`url`, `source` required). Fetches HTML via axios, parses price table with cheerio, fuzzy-matches to ingredients, returns `processBatch` result. |
@@ -325,7 +325,7 @@ Every endpoint returns exactly `{ success, data, message }`:
 // Client error (400, 404, 409)
 { success: false, data: null,        message: 'Human-readable reason' }
 
-// Server error (500) — also caught by global handler in app.js
+// Server error (500), also caught by global handler in app.js
 { success: false, data: null,        message: err.message }
 ```
 
@@ -382,16 +382,16 @@ These are the acceptance thresholds defined in the capstone paper. All must be m
 
 Scope boundaries established in the capstone paper:
 
-1. **Single-restaurant, single-currency** — the system is designed for one restaurant at a time; there is no multi-tenant or multi-branch support. All prices are in Philippine Peso (₱).
+1. **Single-restaurant, single-currency**: the system is designed for one restaurant at a time; there is no multi-tenant or multi-branch support. All prices are in Philippine Peso (₱).
 
-2. **Unit conversion within a dimension only** — recipe quantities are converted to the ingredient's price unit (g/mg/lb/oz → kg, ml/tsp/tbsp/cup → L, pcs → pc) by `backend/utils/units.js` (mirrored in `frontend/src/lib/units.js`). Cross-dimension conversions (e.g. g → pcs, cup of rice → kg) are not supported; the API rejects such recipe units with a 400.
+2. **Unit conversion within a dimension only**: recipe quantities are converted to the ingredient's price unit (g/mg/lb/oz → kg, ml/tsp/tbsp/cup → L, pcs → pc) by `backend/utils/units.js` (mirrored in `frontend/src/lib/units.js`). Cross-dimension conversions (e.g. g → pcs, cup of rice → kg) are not supported; the API rejects such recipe units with a 400.
 
-3. **No authentication or access control** — the system has no login, roles, or session management. It is intended for use on a trusted local network or single-device deployment.
+3. **No authentication or access control**: the system has no login, roles, or session management. It is intended for use on a trusted local network or single-device deployment.
 
-4. **Extraction limited to DTI and DA bulletin formats** — the HTML scraper and PDF parser are tuned for the table structures used in Department of Trade and Industry and Department of Agriculture price bulletins. Other sources may not parse correctly without custom extractor logic.
+4. **Extraction limited to DTI and DA bulletin formats**: the HTML scraper and PDF parser are tuned for the table structures used in Department of Trade and Industry and Department of Agriculture price bulletins. Other sources may not parse correctly without custom extractor logic.
 
-5. **Fuzzy matching requires a populated ingredients table** — the extraction pipeline can only match scraped names to ingredients that already exist in the database. New ingredients must be added manually before their prices can be auto-matched.
+5. **Fuzzy matching requires a populated ingredients table**: the extraction pipeline can only match scraped names to ingredients that already exist in the database. New ingredients must be added manually before their prices can be auto-matched.
 
-6. **No real-time price feeds** — prices are updated by manually triggering an extraction or entering a price. The system does not poll sources automatically on a schedule.
+6. **No real-time price feeds**: prices are updated by manually triggering an extraction or entering a price. The system does not poll sources automatically on a schedule.
 
-7. **Offline-first assumption** — the backend is designed to run locally (`localhost:3000`). Deployment to a remote server or cloud is outside the scope of the capstone but the codebase is stateless enough to support it.
+7. **Offline-first assumption**: the backend is designed to run locally (`localhost:3000`). Deployment to a remote server or cloud is outside the scope of the capstone but the codebase is stateless enough to support it.
